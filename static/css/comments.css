@@ -1,0 +1,219 @@
+/* comments.css */
+
+/* Base Comment Styling (reusing from blog_detail.css if present, otherwise defining here) */
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem; /* Spacing between top-level comments */
+    margin-top: 2rem; /* Add some space below the form */
+}
+
+.comment {
+    background-color: var(--light-color); /* Using light-color from root variables */
+    padding: 1.5rem;
+    border-radius: var(--radius); /* Using radius from root variables */
+    box-shadow: var(--shadow-sm); /* Using shadow-sm from root variables */
+    border: 1px solid var(--light-gray); /* Subtle border for definition */
+    position: relative; /* For nested replies positioning */
+}
+
+.comment-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.comment-avatar {
+    width: 45px; /* Slightly larger than previous 40px for better visibility */
+    height: 45px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--primary-color); /* Small accent border */
+}
+
+.comment-author {
+    font-weight: 600;
+    color: var(--dark-color);
+    display: block;
+    font-size: 1.1rem; /* Slightly larger for prominence */
+}
+
+.comment-date {
+    font-size: 0.85rem;
+    color: var(--gray-color);
+}
+
+.comment-body {
+    margin-bottom: 1rem;
+    color: var(--dark-color); /* Changed from #334155 to use variable */
+    line-height: 1.7;
+}
+
+.comment-body p:last-child {
+    margin-bottom: 0; /* Remove extra margin from last paragraph in comment body */
+}
+
+.comment-reply {
+    background: none;
+    border: none;
+    color: var(--primary-color); /* Using primary-color variable */
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem; /* Add some padding for easier clicking */
+    font-size: 0.9rem;
+    transition: var(--transition); /* Use transition variable */
+    border-radius: var(--radius-sm);
+}
+
+.comment-reply:hover {
+    text-decoration: underline;
+    background-color: rgba(var(--primary-color-rgb, 37, 99, 235), 0.1); /* Slight background on hover */
+}
+
+/* Reply Form for Individual Comments */
+.comment-reply-form {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: var(--light-gray); /* Lighter background for reply form to differentiate */
+    border-radius: var(--radius);
+    display: none; /* Hidden by default, controlled by JS */
+    border: 1px solid var(--gray-color);
+}
+
+.comment-reply-form textarea {
+    width: 100%;
+    min-height: 80px; /* Make reply textarea slightly smaller */
+    padding: 0.75rem;
+    border: 1px solid var(--light-gray);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-primary);
+    resize: vertical;
+    margin-bottom: 1rem;
+    transition: var(--transition);
+}
+
+.comment-reply-form textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.comment-reply-form .form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem; /* Adjust margin for reply form fields */
+}
+
+.comment-reply-form .form-group {
+    flex: 1;
+}
+
+.comment-reply-form input {
+    width: 100%;
+    padding: 0.6rem 1rem; /* Smaller padding for reply inputs */
+    border: 1px solid var(--light-gray);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-primary);
+    transition: var(--transition);
+    background-color: white; /* Ensure input background is white */
+}
+
+.comment-reply-form input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.comment-reply-form input[readonly] {
+    background-color: var(--light-gray);
+    cursor: not-allowed;
+    color: var(--gray-color);
+}
+
+.reply-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Nested Replies */
+.replies {
+    margin-top: 1.5rem;
+    padding-left: 1.5rem; /* Indent for replies */
+    border-left: 2px solid var(--light-gray); /* Visual indicator for nesting */
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; /* Spacing between nested comments */
+}
+
+.comment.comment-reply-item {
+    margin-top: 0; /* Adjust margin for direct replies */
+    background-color: var(--light-color); /* Keep same background for nested comments */
+}
+
+/* No comments message */
+.no-comments {
+    text-align: center;
+    color: var(--gray-color);
+    padding: 2rem;
+    background-color: var(--light-color);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Toast Messages */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 24px;
+    border-radius: 4px;
+    background-color: var(--dark-color);
+    color: white;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    z-index: 1000;
+    box-shadow: var(--shadow-md);
+    min-width: 250px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.toast.success {
+    background-color: var(--success-color);
+}
+
+.toast.error {
+    background-color: var(--danger-color);
+}
+
+
+/* Responsive Adjustments for Comments */
+@media (max-width: 768px) {
+    .replies {
+        padding-left: 1rem; /* Reduce indent on smaller screens */
+    }
+}
+
+@media (max-width: 576px) {
+    .comments-container {
+        padding: 0 1rem; /* Add horizontal padding for forms on very small screens */
+    }
+
+    .comment {
+        padding: 1rem; /* Smaller padding for comments */
+    }
+
+    .comment-reply-form .form-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}

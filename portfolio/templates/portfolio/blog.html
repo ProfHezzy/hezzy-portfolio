@@ -1,0 +1,96 @@
+{% extends "portfolio/base.html" %}
+{% load static custom_filters %} {# Ensure custom_filters is loaded for reading time #}
+{% block title %}Blog | Hezzy Developer{% endblock %}
+
+{% block content %}
+    <!-- Blog Hero -->
+    <section class="blog-hero">
+        <div class="container">
+            <h1>Developer <span>Blog</span></h1>
+            <p>Thoughts, tutorials, and insights on web development and technology</p>
+        </div>
+    </section>
+
+    <!-- Blog Posts -->
+    <section class="blog-posts">
+        <div class="container">
+            <div class="posts-grid">
+                {% for post in posts %} {# 'posts' here is the Page object from Paginator #}
+                <article class="post-card">
+                    <div class="post-image">
+                        {# FIX: Changed 'blog.featured_image' to 'post.featured_image' #}
+                        {# FIX: Changed 'default.jpg' to 'default_blog_image.jpg' for consistency #}
+                        {% if post.featured_image %}
+                            <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
+                        {% else %}
+                            <img src="{% static 'images/default_blog_image.jpg' %}" alt="Default Image">
+                        {% endif %}
+                    </div>
+                    <div class="post-content">
+                        <div class="post-meta">
+                            <span class="post-date">{{ post.published_at|date:"F j, Y" }}</span>
+                            {# FIX: Dynamic reading time using custom filters #}
+                            <span class="post-read-time">~{{ post.content|wordcount|divide:200|floor }} min read</span>
+                        </div>
+                        <h2><a href="{% url 'blog_detail' post.slug %}">{{ post.title }}</a></h2>
+                        <p>{{ post.excerpt }}</p>
+                        <div class="post-footer">
+                            <div class="post-tags">
+                                {% for tag in post.tags.all %}
+                                <a href="#" class="tag">{{ tag.name }}</a> {# Consider linking to tag filtered pages later #}
+                                {% endfor %}
+                            </div>
+                            <a href="{% url 'blog_detail' post.slug %}" class="read-more">Read More <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </div>
+                </article>
+                {% empty %}
+                {# Displayed if 'posts' is empty (e.g., no published posts) #}
+                <p class="no-posts-found">No blog posts available yet. Check back soon!</p>
+                {% endfor %}
+            </div>
+            
+            <!-- Dynamic Pagination -->
+            {# Check if pagination is needed (more than one page) #}
+            {% if posts.has_other_pages %}
+            <div class="pagination">
+                {# "Previous" button #}
+                {% if posts.has_previous %}
+                    <a href="?page={{ posts.previous_page_number }}" class="page-link prev"><i class="fas fa-chevron-left"></i> Prev</a>
+                {% else %}
+                    <span class="page-link prev disabled"><i class="fas fa-chevron-left"></i> Prev</span>
+                {% endif %}
+
+                {# Numbered pages #}
+                {% for page_num in posts.paginator.page_range %}
+                    <a href="?page={{ page_num }}" 
+                       class="page-link {% if page_num == posts.number %}active{% endif %}">
+                       {{ page_num }}
+                    </a>
+                {% endfor %}
+
+                {# "Next" button #}
+                {% if posts.has_next %}
+                    <a href="?page={{ posts.next_page_number }}" class="page-link next">Next <i class="fas fa-chevron-right"></i></a>
+                {% else %}
+                    <span class="page-link next disabled">Next <i class="fas fa-chevron-right"></i></span>
+                {% endif %}
+            </div>
+            {% endif %} {# End if posts.has_other_pages #}
+        </div>
+    </section>
+
+    <!-- Newsletter -->
+    <section class="newsletter">
+        <div class="container">
+            <div class="newsletter-content">
+                <h2>Stay Updated</h2>
+                <p>Subscribe to my newsletter to receive the latest posts and updates.</p>
+                <form class="newsletter-form">
+                    <input type="email" placeholder="Your email address" required>
+                    <button type="submit" class="btn btn-primary">Subscribe</button>
+                </form>
+            </div>
+        </div>
+    </section>
+{% endblock %}

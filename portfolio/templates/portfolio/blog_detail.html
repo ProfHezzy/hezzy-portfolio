@@ -1,0 +1,398 @@
+{% extends "portfolio/base.html" %}
+{% load static custom_filters %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/blog_detail.css' %}">
+<link rel="stylesheet" href="{% static 'css/comments.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+{% endblock %}
+
+{% block content %}
+<article class="blog-detail">
+    <!-- Hero Section with Parallax Effect -->
+    <section class="blog-hero" {% if post.featured_image %}style="background-image: url('{{ post.featured_image.url }}')"{% endif %}>
+        <div class="hero-overlay"></div>
+        <div class="container">
+            <div class="breadcrumb animate__animated animate__fadeIn">
+                <a href="{% url 'blog' %}">Blog</a>
+                <span>/</span>
+                <span>{{ post.title|truncatechars:30 }}</span>
+            </div>
+            <h1 class="hero-title animate__animated animate__fadeInUp">{{ post.title }}</h1>
+            <div class="hero-meta animate__animated animate__fadeInUp animate__delay-1s">
+                <div class="meta-item">
+                    <i class="far fa-calendar-alt"></i>
+                    <span>{{ post.published_at|date:"F j, Y" }}</span>
+                </div>
+                <div class="meta-item">
+                    <i class="far fa-clock"></i>
+                    <span>{{ post.content|wordcount|divide:200|floor }} min read</span>
+                </div>
+                <div class="meta-item tags">
+                    {% for tag in post.tags.all %}
+                    <span class="tag-bubble">{{ tag.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="scroll-indicator animate__animated animate__fadeIn animate__delay-2s">
+            <div class="mouse">
+                <div class="scroller"></div>
+            </div>
+            <span>Scroll to read</span>
+        </div>
+    </section>
+
+    <!-- Floating Social Share -->
+    <div class="floating-social">
+        <div class="social-buttons">
+            <span class="share-label">Share:</span>
+            <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}" target="_blank" class="social-btn twitter" title="Share on Twitter">
+                <i class="fab fa-twitter"></i>
+                <span class="tooltip">Twitter</span>
+            </a>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title={{ post.title }}" target="_blank" class="social-btn linkedin" title="Share on LinkedIn">
+                <i class="fab fa-linkedin-in"></i>
+                <span class="tooltip">LinkedIn</span>
+            </a>
+            <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank" class="social-btn facebook" title="Share on Facebook">
+                <i class="fab fa-facebook-f"></i>
+                <span class="tooltip">Facebook</span>
+            </a>
+            <button class="social-btn copy-link" title="Copy link">
+                <i class="fas fa-link"></i>
+                <span class="tooltip">Copy Link</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="blog-main">
+        <div class="container">
+            <div class="content-grid">
+                <!-- Article Content -->
+                <div class="article-content">
+                    <!-- Author Card -->
+                    <div class="author-card animate__animated animate__fadeIn">
+                        <div class="author-avatar">
+                            {% if site_settings.profile_picture %}
+                                <img src="{{ site_settings.profile_picture.url }}" alt="{{ site_settings.site_title }}" loading="lazy">
+                            {% else %}
+                                <img src="{% static 'images/default_user_avatar.jpg' %}" alt="Author Avatar" loading="lazy">
+                            {% endif %}
+                        </div>
+                        <div class="author-info">
+                            <h4>Written by {{ site_settings.site_title }}</h4>
+                            <p>{{ site_settings.about_me|default:"Full-Stack Developer passionate about building exceptional digital experiences."|truncatewords:20 }}</p>
+                        </div>
+                        <div class="author-social">
+                            {% for social_link in social_links|slice:":4" %}
+                                <a href="{{ social_link.url }}" target="_blank" title="{{ social_link.name }}"><i class="{{ social_link.icon }}"></i></a>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Article Body with Floating TOC -->
+                    <div class="article-body">
+                        <div class="content-actions">
+                            <button class="action-btn like-btn {% if has_user_liked %}liked{% endif %}" data-post-slug="{{ post.slug }}" data-post-id="{{ post.id }}">
+                                <span class="heart-icon">
+                                    <i class="far fa-heart"></i>
+                                    <i class="fas fa-heart"></i>
+                                </span>
+                                <span class="like-count">{{ post.likes_count }}</span>
+                            </button>
+                            <button class="action-btn comment-btn scroll-to-comments">
+                                <i class="far fa-comment"></i>
+                                <span class="comment-count">{{ comments.count }}</span>
+                            </button>
+                            <button class="action-btn bookmark-btn">
+                                <i class="far fa-bookmark"></i>
+                            </button>
+                        </div>
+
+                        <div class="post-content">
+                            {{ post.content|safe }}
+                        </div>
+
+                        <!-- Article Footer -->
+                        <div class="article-footer">
+                            <div class="tags-container">
+                                <h5>Tags:</h5>
+                                <div class="tags-list">
+                                    {% for tag in post.tags.all %}
+                                    <a href="#" class="tag-pill">{{ tag.name }}</a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="share-container">
+                                <h5>Share this article:</h5>
+                                <div class="share-buttons">
+                                    <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}" target="_blank" class="share-btn twitter">
+                                        <i class="fab fa-twitter"></i> Twitter
+                                    </a>
+                                    <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title={{ post.title }}" target="_blank" class="share-btn linkedin">
+                                        <i class="fab fa-linkedin-in"></i> LinkedIn
+                                    </a>
+                                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank" class="share-btn facebook">
+                                        <i class="fab fa-facebook-f"></i> Facebook
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar with Table of Contents -->
+                <aside class="article-sidebar">
+                    <div class="sticky-sidebar">
+                        <div class="toc-wrapper">
+                            <h4 class="toc-title">Table of Contents</h4>
+                            <nav class="toc-nav" id="toc-nav">
+                                <!-- Generated by JavaScript -->
+                            </nav>
+                        </div>
+
+                        <div class="newsletter-card">
+                            <div class="newsletter-icon">
+                                <i class="fas fa-envelope-open-text"></i>
+                            </div>
+                            <h4>Stay Updated</h4>
+                            <p>Get the latest articles and resources delivered to your inbox</p>
+                            <form class="newsletter-form">
+                                <input type="email" placeholder="Your email address" required>
+                                <button type="submit" class="btn-subscribe">
+                                    <span>Subscribe</span>
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
+                            <p class="disclaimer">No spam. Unsubscribe anytime.</p>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+
+    <!-- Author Bio Section -->
+    <section class="author-bio-section">
+        <div class="container">
+            <div class="bio-grid">
+                <div class="bio-avatar">
+                    {% if site_settings.profile_picture %}
+                        <img src="{{ site_settings.profile_picture.url }}" alt="{{ site_settings.site_title }}" loading="lazy" class="animate__animated animate__fadeInLeft">
+                    {% else %}
+                        <img src="{% static 'images/default_user_avatar.jpg' %}" alt="Author Avatar" loading="lazy" class="animate__animated animate__fadeInLeft">
+                    {% endif %}
+                </div>
+                <div class="bio-content animate__animated animate__fadeInRight">
+                    <h3>About {{ site_settings.site_title }}</h3>
+                    <p>{{ site_settings.about_me|default:"Full-Stack Developer passionate about building exceptional digital experiences with modern web technologies. I enjoy sharing insights and tutorials about web development, programming, and technology trends." }}</p>
+                    <div class="bio-stats">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ post_count|default:"50+" }}</span>
+                            <span class="stat-label">Articles</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ total_reads|default:"10K+" }}</span>
+                            <span class="stat-label">Reads</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ years_experience|default:"5+" }}</span>
+                            <span class="stat-label">Years Experience</span>
+                        </div>
+                    </div>
+                    <div class="bio-social">
+                        {% for social_link in social_links %}
+                            <a href="{{ social_link.url }}" target="_blank" class="social-link" title="{{ social_link.name }}">
+                                <i class="{{ social_link.icon }}"></i>
+                            </a>
+                        {% empty %}
+                            <a href="#" class="social-link" title="GitHub"><i class="fab fa-github"></i></a>
+                            <a href="#" class="social-link" title="Twitter"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="social-link" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Related Articles -->
+    <section class="related-articles">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">More to Read</h2>
+                <a href="{% url 'blog' %}" class="view-all">View All Articles <i class="fas fa-arrow-right"></i></a>
+            </div>
+            
+            <div class="related-grid">
+                {% for related_post in related_posts %}
+                <article class="related-card animate__animated animate__fadeInUp">
+                    <a href="{% url 'blog_detail' related_post.slug %}" class="related-link">
+                        <div class="related-image">
+                            {% if related_post.featured_image %}
+                                <img src="{{ related_post.featured_image.url }}" alt="{{ related_post.title }}" loading="lazy">
+                            {% else %}
+                                <img src="{% static 'images/default_blog_image.jpg' %}" alt="Default Image" loading="lazy">
+                            {% endif %}
+                            <div class="image-overlay"></div>
+                            <div class="read-time">{{ related_post.content|wordcount|divide:200|floor }} min read</div>
+                        </div>
+                        <div class="related-content">
+                            <div class="related-meta">
+                                <span class="category">Development</span>
+                                <span class="date">{{ related_post.published_at|date:"M j, Y" }}</span>
+                            </div>
+                            <h3 class="related-title">{{ related_post.title }}</h3>
+                            <p class="related-excerpt">{{ related_post.excerpt|default:""|truncatewords:20 }}</p>
+                            <div class="related-footer">
+                                <span class="read-more">Read Article <i class="fas fa-arrow-right"></i></span>
+                            </div>
+                        </div>
+                    </a>
+                </article>
+                {% empty %}
+                <div class="no-related">
+                    <i class="far fa-newspaper"></i>
+                    <p>No related articles found. Check back later!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Comments Section -->
+    <section class="comments-section" id="comments">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Discussion <span class="comment-count-badge">{{ comments.count }}</span></h2>
+                <p class="section-subtitle">Join the conversation and share your thoughts</p>
+            </div>
+            
+            <div class="comments-container">
+                <form class="comment-form" id="comment-form" method="post" action="{% url 'post_comment' post.slug %}">
+                    {% csrf_token %}
+                    <div class="form-header">
+                        <h4>Leave a comment</h4>
+                        <p>Your email address will not be published. Required fields are marked *</p>
+                    </div>
+                    
+                    {% if comment_form.errors %}
+                        <div class="form-errors">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <div class="errors-content">
+                                <strong>Please correct the following errors:</strong>
+                                <ul>
+                                    {% for field in comment_form %}
+                                        {% for error in field.errors %}
+                                            <li>{{ field.label }}: {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                    {% for error in comment_form.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="form-group">
+                        <label for="{{ comment_form.content.id_for_label }}">Comment *</label>
+                        {{ comment_form.content }}
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="{{ comment_form.name.id_for_label }}">Name *</label>
+                            {{ comment_form.name }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ comment_form.email.id_for_label }}">Email *</label>
+                            {{ comment_form.email }}
+                        </div>
+                    </div>
+                    
+                    {{ comment_form.post }}
+                    {{ comment_form.parent }}
+                    
+                    <div class="form-footer">
+                        <button type="submit" class="btn-submit-comment">
+                            <span>Post Comment</span>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="comments-list" id="comments-list">
+                    {% if comments %}
+                        <div class="comments-sorting">
+                            <span>Sort by:</span>
+                            <button class="sort-btn active" data-sort="newest">Newest First</button>
+                            <button class="sort-btn" data-sort="oldest">Oldest First</button>
+                        </div>
+                    {% endif %}
+                    
+                    {% for comment in comments %}
+                        {% include 'portfolio/comments.html' with comment=comment post=post %}
+                    {% empty %}
+                        <div class="no-comments">
+                            <i class="far fa-comment-dots"></i>
+                            <p>No comments yet. Be the first to share your thoughts!</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter CTA -->
+    <section class="newsletter-cta">
+        <div class="container">
+            <div class="cta-content animate__animated animate__fadeIn">
+                <div class="cta-text">
+                    <h2>Want more content like this?</h2>
+                    <p>Subscribe to my newsletter and get the latest articles, tutorials, and resources delivered straight to your inbox.</p>
+                </div>
+                <form class="cta-form">
+                    <div class="input-group">
+                        <input type="email" placeholder="Enter your email" required>
+                        <button type="submit" class="btn-cta">
+                            <span>Subscribe</span>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <p class="privacy-note">
+                        <i class="fas fa-lock"></i> We respect your privacy. Unsubscribe at any time.
+                    </p>
+                </form>
+            </div>
+        </div>
+    </section>
+</article>
+
+<!-- Progress Reading Indicator -->
+<div class="reading-progress">
+    <div class="progress-bar" id="progress-bar"></div>
+</div>
+
+<!-- Back to Top Button -->
+<button class="back-to-top" id="back-to-top">
+    <i class="fas fa-arrow-up"></i>
+</button>
+
+{# Pass user authentication status and details to JavaScript #}
+<script type="text/javascript">
+    window.USER_IS_AUTHENTICATED = "{{ request.user.is_authenticated|yesno:'true,false' }}";
+    window.USER_FULL_NAME = "{% if request.user.is_authenticated %}{{ request.user.get_full_name|default:request.user.username }}{% endif %}";
+    window.USER_EMAIL = "{% if request.user.is_authenticated %}{{ request.user.email }}{% endif %}";
+    window.POST_SLUG = "{{ post.slug }}";
+    window.POST_ID = "{{ post.id }}";
+    window.CSRF_TOKEN = "{{ csrf_token }}";
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/blog_detail.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@17.8.3/dist/lazyload.min.js"></script>
+{% endblock %}

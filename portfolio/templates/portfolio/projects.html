@@ -1,0 +1,149 @@
+{% extends "portfolio/base.html" %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/blog_detail.css' %}">
+<link rel="stylesheet" href="{% static 'css/comments.css' %}">
+<link rel="stylesheet" href="{% static 'css/projects.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+{% endblock %}
+{% block content %}
+<section class="projects-hero">
+  <div class="hero-content">
+    <h1 class="hero-title">My <span class="highlight">Projects</span></h1>
+    <p class="hero-subtitle">Explore my full-stack development journey through these carefully crafted applications</p>
+    <div class="hero-scroll">
+      <span>Scroll to explore</span>
+      <div class="scroll-arrow"></div>
+    </div>
+  </div>
+  <div class="hero-background">
+    <div class="floating-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+      <div class="shape shape-4"></div>
+    </div>
+  </div>
+</section>
+
+<section class="projects-filter">
+  <div class="filter-container">
+    <button class="filter-btn active" data-filter="all">All Projects</button>
+    <button class="filter-btn" data-filter="frontend">Frontend</button>
+    <button class="filter-btn" data-filter="backend">Backend</button>
+    <button class="filter-btn" data-filter="fullstack">Full Stack</button>
+    <button class="filter-btn" data-filter="mobile">Mobile</button>
+  </div>
+  <div class="search-container">
+    <input type="text" class="search-input" placeholder="Search projects...">
+    <i class="search-icon fas fa-search"></i>
+  </div>
+</section>
+
+<section class="projects-grid">
+  <!-- Projects will be loaded dynamically via JavaScript -->
+  <div class="project-loading">
+    <div class="loading-spinner"></div>
+    <p>Loading projects...</p>
+  </div>
+</section>
+
+<section class="projects-cta">
+  <div class="cta-container">
+    <h2>Have a project in mind?</h2>
+    <p>I'm always excited to work on new challenges and collaborate on interesting ideas.</p>
+    <a href="/contact" class="cta-button">Let's Talk</a>
+  </div>
+  <div class="cta-decoration">
+    <div class="cta-shape"></div>
+  </div>
+</section>
+
+<template id="project-template">
+  <article class="project-card" data-category="" data-tech="">
+    <div class="project-card-inner">
+      <div class="project-image">
+        <div class="image-overlay">
+          <button class="view-details-btn">View Details</button>
+        </div>
+      </div>
+      <div class="project-content">
+        <div class="project-header">
+          <h3 class="project-title"></h3>
+          <div class="project-links">
+            <a href="#" class="project-link" target="_blank" rel="noopener noreferrer">
+              <i class="fas fa-external-link-alt"></i>
+            </a>
+            <a href="#" class="project-link" target="_blank" rel="noopener noreferrer">
+              <i class="fab fa-github"></i>
+            </a>
+          </div>
+        </div>
+        <p class="project-description"></p>
+        <div class="project-tech">
+          <!-- Tech tags will be added here -->
+        </div>
+      </div>
+    </div>
+  </article>
+</template>
+
+<div class="project-modal">
+  <div class="modal-overlay"></div>
+  <div class="modal-container">
+    <button class="modal-close-btn">
+      <i class="fas fa-times"></i>
+    </button>
+    <div class="modal-content">
+      <div class="modal-left">
+        <div class="modal-image-container">
+          <img src="" alt="" class="modal-image">
+          <div class="modal-image-nav">
+            <button class="image-nav-btn prev-btn"><i class="fas fa-chevron-left"></i></button>
+            <button class="image-nav-btn next-btn"><i class="fas fa-chevron-right"></i></button>
+          </div>
+        </div>
+        <div class="modal-thumbnails">
+          <!-- Thumbnails will be added here -->
+        </div>
+      </div>
+      <div class="modal-right">
+        <h2 class="modal-title"></h2>
+        <div class="modal-meta">
+          <span class="modal-date"></span>
+          <span class="modal-category"></span>
+        </div>
+        <div class="modal-links">
+          <a href="#" class="modal-link live-link" target="_blank" rel="noopener noreferrer">
+            <i class="fas fa-external-link-alt"></i> Live Demo
+          </a>
+          <a href="#" class="modal-link code-link" target="_blank" rel="noopener noreferrer">
+            <i class="fab fa-github"></i> View Code
+          </a>
+        </div>
+        <div class="modal-description"></div>
+        <div class="modal-tech">
+          <h3>Technologies Used</h3>
+          <div class="tech-tags">
+            <!-- Tech tags will be added here -->
+          </div>
+        </div>
+        <div class="modal-features">
+          <h3>Key Features</h3>
+          <ul class="features-list">
+            <!-- Features will be added here -->
+          </ul>
+        </div>
+        <div class="modal-challenges">
+          <h3>Challenges & Solutions</h3>
+          <div class="challenges-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/projects.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@17.8.3/dist/lazyload.min.js"></script>
+{% endblock %}

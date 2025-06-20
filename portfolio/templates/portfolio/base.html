@@ -1,0 +1,85 @@
+{% load static %}
+{% load static custom_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Alex Developer | Full-Stack Engineer{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="{% url 'home' %}" class="logo">Hezekiah<span>Ojenike</span></a>
+            <div class="nav-links">
+                <a href="{% url 'home' %}#about">About</a>
+                <a href="{% url 'home' %}#skills">Skills</a>
+                <a href="{% url 'home' %}#projects">Projects</a>
+                <a href="{% url 'home' %}#experience">Experience</a>
+                <a href="{% url 'blog' %}">Blog</a>
+                <a href="{% url 'home' %}#contact" class="btn btn-primary">Contact</a>
+            </div>
+            <button class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu">
+        <a href="{% url 'home' %}#about">About</a>
+        <a href="{% url 'home' %}#skills">Skills</a>
+        <a href="{% url 'home' %}#projects">Projects</a>
+        <a href="{% url 'home' %}#experience">Experience</a>
+        <a href="{% url 'blog' %}">Blog</a>
+        <a href="{% url 'home' %}#contact" class="btn btn-primary">Contact</a>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-about">
+                    <h3>Hezekiah Ojenike</h3>
+                    <p>Full-Stack Developer creating robust, scalable web applications with modern technologies.</p>
+                </div>
+                <div class="footer-links">
+                    <h3>Quick Links</h3>
+                    <a href="{% url 'home' %}#about">About</a>
+                    <a href="{% url 'home' %}#projects">Projects</a>
+                    <a href="{% url 'blog' %}">Blog</a>
+                    <a href="{% url 'home' %}#contact">Contact</a>
+                </div>
+                <div class="footer-social">
+                    <h3>Connect</h3>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-github"></i></a>
+                        <a href="#"><i class="fab fa-linkedin"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-dev"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; {% now "Y" %} Hezekiah Ojenike. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

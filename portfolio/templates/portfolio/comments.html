@@ -1,0 +1,29 @@
+{# portfolio/comments.html #}
+<div class="comment-item {% if comment.parent %}comment-reply-item{% endif %}" id="comment-{{ comment.id }}">
+    <div class="comment-header">
+        <img src="{{ comment.get_avatar_url }}" alt="{{ comment.get_author_name }}" class="comment-avatar">
+        <div>
+            <span class="comment-author">{{ comment.get_author_name }}</span>
+            <span class="comment-date">{{ comment.created_at|date:"F j, Y, H:i" }}</span>
+        </div>
+    </div>
+    <div class="comment-body">
+        <p>{{ comment.content|linebreaksbr }}</p>
+    </div>
+    {# This button will trigger the JavaScript to dynamically inject and show the reply form #}
+    <button class="comment-reply" data-comment-id="{{ comment.id }}">Reply</button>
+    
+    {# This div will be populated by JavaScript with the reply form HTML when 'Reply' is clicked #}
+    <div class="comment-reply-form" id="reply-form-{{ comment.id }}" style="display: none;">
+        {# JavaScript will inject the form HTML here #}
+    </div>
+
+    {% if comment.replies.all %}
+    <div class="replies">
+        {% for reply in comment.replies.all %}
+            {# Recursive include for nested replies #}
+            {% include 'portfolio/comments.html' with comment=reply post=post %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
