@@ -140,8 +140,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Set links (hide if not available)
-        if (project.liveUrl) {
-            liveLink.href = project.liveUrl;
+        if (project.live_url) {
+            liveLink.href = project.live_url;
             liveLink.style.display = 'inline-flex';
         } else {
             liveLink.style.display = 'none';
@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        return clone;
+        return projectCard;
     }
 
     // --- Filter Projects based on active filter and search term ---
@@ -216,8 +216,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const liveLink = document.querySelector('.modal-link.live-link');
         const codeLink = document.querySelector('.modal-link.code-link');
 
-        if (currentProject.liveUrl) {
-            liveLink.href = currentProject.liveUrl;
+        if (currentproject.live_url) {
+            liveLink.href = currentproject.live_url;
             liveLink.style.display = 'inline-flex';
         } else {
             liveLink.style.display = 'none';
@@ -243,9 +243,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Set features
         const featuresList = document.querySelector('.features-list');
         featuresList.innerHTML = '';
-        // Assuming features are a newline-separated string, convert to list items
-        if (currentProject.features) {
-            currentProject.features.split('\n').filter(Boolean).forEach(feature => { // filter(Boolean) removes empty strings
+        if (currentProject.key_features && Array.isArray(currentProject.key_features)) {
+            currentProject.key_features.forEach(feature => {
                 const li = document.createElement('li');
                 li.textContent = feature.trim();
                 featuresList.appendChild(li);
@@ -253,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Set challenges
-        document.querySelector('.challenges-content').innerHTML = currentProject.challenges; // Use innerHTML for rich text
+        document.querySelector('.challenges-content').innerHTML = currentProject.challenges_and_solutions || '';
 
         // Set up image gallery
         setupImageGallery(currentProject.images);

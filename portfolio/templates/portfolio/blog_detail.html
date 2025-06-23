@@ -2,7 +2,7 @@
 {% load static custom_filters %}
 
 {% block head %}
-    <title>{{ post.title }} - Your Blog Name</title> {# Example: customize your title #}
+    <title>{{ blog_post.title }} - Your Blog Name</title>
 
     <!-- Open Graph / Facebook / LinkedIn / General Social Media Tags -->
     <meta property="og:title" content="{{ post.title }}">
@@ -129,7 +129,7 @@
                     <!-- Article Body with Floating TOC -->
                     <div class="article-body">
                         <div class="content-actions">
-                            <button class="action-btn like-btn {% if has_user_liked %}liked{% endif %}" data-post-slug="{{ post.slug }}" data-post-id="{{ post.id }}">
+                            <button class="action-btn like-btn {% if has_session_liked %}liked{% endif %}" data-post-slug="{{ post.slug }}" data-post-id="{{ post.id }}">
                                 <span class="heart-icon">
                                     <i class="far fa-heart"></i>
                                     <i class="fas fa-heart"></i>
@@ -305,7 +305,7 @@
             </div>
             
             <div class="comments-container">
-                <form class="comment-form" id="comment-form" method="post" action="{% url 'post_comment' post.slug %}">
+                <form class="comment-form" id="comment-form" method="post" action="{% url 'post_comment' blog_post.slug %}">
                     {% csrf_token %}
                     <div class="form-header">
                         <h4>Leave a comment</h4>
@@ -347,7 +347,7 @@
                         </div>
                     </div>
                     
-                    {{ comment_form.post }}
+                    {{ comment_form.blog_post }}
                     {{ comment_form.parent }}
                     
                     <div class="form-footer">
@@ -415,13 +415,10 @@
     <i class="fas fa-arrow-up"></i>
 </button>
 
-{# Pass user authentication status and details to JavaScript #}
-<script type="text/javascript">
-    window.USER_IS_AUTHENTICATED = "{{ request.user.is_authenticated|yesno:'true,false' }}";
-    window.USER_FULL_NAME = "{% if request.user.is_authenticated %}{{ request.user.get_full_name|default:request.user.username }}{% endif %}";
-    window.USER_EMAIL = "{% if request.user.is_authenticated %}{{ request.user.email }}{% endif %}";
-    window.POST_SLUG = "{{ post.slug }}";
-    window.POST_ID = "{{ post.id }}";
+<!-- Place this in your blog_detail.html, before your blog_detail.js script tag -->
+<script>
+    window.POST_SLUG = "{{ blog_post.slug|escapejs }}";
+    window.POST_ID = "{{ blog_post.id }}";
     window.CSRF_TOKEN = "{{ csrf_token }}";
 </script>
 {% endblock %}

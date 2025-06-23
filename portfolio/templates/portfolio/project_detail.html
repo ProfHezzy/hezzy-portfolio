@@ -1,0 +1,307 @@
+{% extends "portfolio/base.html" %}
+{% load static %} {# custom_filters might not be needed if not used elsewhere, or ensure it's loaded if you have it #}
+{% load feature_filters %}
+
+{% block head_meta %} {# Using head_meta for specific meta tag injection from base.html #}
+    {# Dynamic Title: Use project title if available, fallback to site title #}
+    <title>{{ project.title|default:site_settings.site_title|default:"My Projects" }} - {{ site_settings.site_title|default:"My Portfolio" }}</title>
+
+    <!-- Primary SEO Meta Tags (for general search engines) -->
+    <meta name="title" content="{{ project.title|default:site_settings.site_title }}">
+    {# Use seo_description first, then short_description, then a general default fallback #}
+    <meta name="description" content="{{ project.seo_description|default:project.short_description|default:"Explore my projects and insights into web development, programming, and technology."|truncatechars:160 }}">
+    {# Use seo_keywords first, then a general default list for projects #}
+    <meta name="keywords" content="{{ project.seo_keywords|default:"web development, programming, technology, portfolio, edtech, e-learning, full-stack, frontend, backend, django, python, javascript, html, css, projects" }}">
+    <meta name="author" content="{{ site_settings.site_title }}">
+
+    <!-- Open Graph / Facebook / LinkedIn / General Social Media Tags (for rich link previews) -->
+    <meta property="og:type" content="article"> {# Use 'article' for specific content like a project/blog post #}
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:title" content="{{ project.title|default:site_settings.site_title }}">
+    <meta property="og:description" content="{{ project.seo_description|default:project.short_description|default:"Explore my projects and insights into web development, programming, and technology."|truncatechars:160 }}">
+    {% if project.featured_image %}
+        {# Build absolute URL for image using request scheme and host #}
+        <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ project.featured_image.url }}">
+        <meta property="og:image:width" content="1200"> {# Recommended size for social shares #}
+        <meta property="og:image:height" content="630"> {# Recommended size for social shares #}
+    {% else %}
+        {# Fallback to a default image if no featured image is provided for the project #}
+        <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/default_project.jpg' %}"> 
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+    {% endif %}
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="{{ site_settings.site_title|default:"My Personal Portfolio" }}">
+
+    <!-- Twitter Card Tags (for specific Twitter previews) -->
+    <meta name="twitter:card" content="summary_large_image"> {# Use 'summary_large_image' for a prominent image #}
+    <meta name="twitter:url" content="{{ request.build_absolute_uri }}">
+    <meta name="twitter:title" content="{{ project.title|default:site_settings.site_title }}">
+    <meta name="twitter:description" content="{{ project.seo_description|default:project.short_description|default:"Explore my projects and insights into web development, programming, and technology."|truncatechars:160 }}">
+    {% if project.featured_image %}
+        <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{{ project.featured_image.url }}">
+    {% else %}
+        <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/default_project.jpg' %}">
+    {% endif %}
+    <meta name="twitter:site" content="@Kvng_Hezzy"> {# Replace with your actual Twitter handle #}
+    <meta name="twitter:creator" content="@Kvng_Hezzy"> {# Replace with your actual Twitter handle #}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/project_detail.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="project-hero" style="background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('{% if project.featured_image %}{{ project.featured_image.url }}{% else %}{% static 'images/default_project.jpg' %}{% endif %}')">
+    <div class="container">
+        <div class="hero-content animate__animated animate__fadeIn">
+            <div class="breadcrumb">
+                <a href="{% url 'projects' %}">Projects</a> {# Ensure 'projects' URL name exists for your project list #}
+                <span>/</span>
+                <span>{{ project.title|truncatechars:25 }}</span>
+            </div>
+            <h1>{{ project.title }}</h1>
+            <p class="subtitle">{{ project.short_description }}</p>
+            <div class="hero-meta">
+                <div class="meta-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>{{ project.completion_date|date:"F Y" }}</span>
+                </div>
+                <div class="meta-item">
+                    <i class="fas fa-tags"></i>
+                    <div class="tags">
+                        {% for tech in project.technologies.all %}
+                        <span class="tag">{{ tech.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="scroll-indicator animate__animated animate__fadeIn animate__delay-1s">
+        <div class="mouse">
+            <div class="scroller"></div>
+        </div>
+        <span>Scroll to explore</span>
+    </div>
+</div>
+
+<div class="project-main">
+    <div class="container">
+        <div class="project-grid">
+            <main class="project-content">
+                <section class="project-overview animate__animated animate__fadeIn">
+                    <h2 class="section-title">Project Overview</h2>
+                    <div class="content">
+                        {{ project.description|safe }}
+                    </div>
+                </section>
+
+                {% if project.key_features %}
+                <section class="project-features animate__animated animate__fadeIn">
+                    <h2 class="section-title">Key Features</h2>
+                    <div class="features-grid">
+                        {% for feature in project.key_features|splitlines %}
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <h3>{{ feature }}</h3>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+
+                {% if project.challenges_and_solutions %}
+                <section class="project-challenges animate__animated animate__fadeIn">
+                    <h2 class="section-title">Challenges & Solutions</h2>
+                    <div class="challenges-content">
+                        {{ project.challenges_and_solutions|safe }}
+                    </div>
+                </section>
+                {% endif %}
+
+                {% if project.gallery.all %}
+                <section class="project-gallery animate__animated animate__fadeIn">
+                    <h2 class="section-title">Project Gallery</h2>
+                    <div class="gallery-container">
+                        <div class="main-image">
+                            <img id="main-gallery-image" src="{{ project.gallery.first.image.url }}" alt="{{ project.title }} screenshot" loading="lazy">
+                        </div>
+                        <div class="thumbnail-container">
+                            {% for image in project.gallery.all %}
+                            <div class="thumbnail {% if forloop.first %}active{% endif %}" data-image="{{ image.image.url }}">
+                                <img src="{{ image.image.url }}" alt="{{ project.title }} thumbnail {{ forloop.counter }}" loading="lazy">
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </section>
+                {% endif %}
+            </main>
+
+            <aside class="project-sidebar">
+                <div class="sidebar-widget project-meta animate__animated animate__fadeIn">
+                    <h3>Project Details</h3>
+                    <ul class="meta-list">
+                        <li>
+                            <span class="meta-label"><i class="fas fa-calendar"></i> Completion Date:</span>
+                            <span class="meta-value">{{ project.completion_date|date:"F j, Y" }}</span>
+                        </li>
+                        <li>
+                            <span class="meta-label"><i class="fas fa-layer-group"></i> Project Type:</span>
+                            <span class="meta-value">{{ project.project_type }}</span>
+                        </li>
+                        <li>
+                            <span class="meta-label"><i class="fas fa-user-tie"></i> Client:</span>
+                            <span class="meta-value">{{ project.client|default:"Personal Project" }}</span>
+                        </li>
+                        <li>
+                            <span class="meta-label"><i class="fas fa-code-branch"></i> Version:</span>
+                            <span class="meta-value">{{ project.version|default:"1.0.0" }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-widget technologies animate__animated animate__fadeIn">
+                    <h3>Technologies Used</h3>
+                    <div class="tech-tags">
+                        {% for tech in project.technologies.all %}
+                        <span class="tech-tag">{{ tech.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="sidebar-widget project-links animate__animated animate__fadeIn">
+                    <h3>Project Links</h3>
+                    <div class="links">
+                        {% if project.live_demo_link %}
+                        <a href="{{ project.live_demo_link }}" class="project-link live-demo" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-external-link-alt"></i> Live Demo
+                        </a>
+                        {% endif %}
+                        {% if project.github_link %}
+                        <a href="{{ project.github_link }}" class="project-link view-code" target="_blank" rel="noopener noreferrer">
+                            <i class="fab fa-github"></i> View Code
+                        </a>
+                        {% endif %}
+                        {% if project.documentation_url %}
+                        <a href="{{ project.documentation_url }}" class="project-link documentation" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-book"></i> Documentation
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="sidebar-widget share-project animate__animated animate__fadeIn">
+                    <h3>Share This Project</h3>
+                    <div class="social-share">
+                        {# Correctly URL-encode all parameters in href for robustness #}
+                        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri|urlencode }}" class="social-btn facebook" target="_blank" title="Share on Facebook">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri|urlencode }}&text={{ project.title|urlencode }}" class="social-btn twitter" target="_blank" title="Share on Twitter">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri|urlencode }}&title={{ project.title|urlencode }}&summary={{ project.short_description|urlencode }}" class="social-btn linkedin" target="_blank" title="Share on LinkedIn">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        <button class="social-btn copy-link" title="Copy link to clipboard">
+                            <i class="fas fa-link"></i>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+
+<section class="more-projects">
+    <div class="container">
+        <h2 class="section-title">More Projects</h2>
+        <div class="projects-grid">
+            {% for related_project in related_projects %}
+            <div class="project-card animate__animated animate__fadeInUp">
+                <a href="{% url 'project_detail' slug=related_project.slug %}">
+                    <div class="project-image">
+                        {% if related_project.featured_image %}
+                        <img src="{{ related_project.featured_image.url }}" alt="{{ related_project.title }}" loading="lazy">
+                        {% else %}
+                        <img src="{% static 'images/default_project.jpg' %}" alt="{{ related_project.title }}" loading="lazy">
+                        {% endif %}
+                        <div class="overlay">
+                            <span>View Project</span>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <h3>{{ related_project.title }}</h3>
+                        <p>{{ related_project.short_description }}</p>
+                        <div class="project-tech">
+                            {% for tech in related_project.technologies.all|slice:":3" %}
+                            <span class="tech-tag">{{ tech.name }}</span>
+                            {% endfor %}
+                            {% if related_project.technologies.count > 3 %}
+                            <span class="tech-tag">+{{ related_project.technologies.count|add:"-3" }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<div class="floating-share">
+    <button class="share-toggle">
+        <i class="fas fa-share-alt"></i>
+    </button>
+    <div class="share-buttons">
+        {# Correctly URL-encode all parameters in href for robustness #}
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri|urlencode }}" class="share-btn facebook" target="_blank" title="Share on Facebook">
+            <i class="fab fa-facebook-f"></i>
+        </a>
+        <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri|urlencode }}&text={{ project.title|urlencode }}" class="share-btn twitter" target="_blank" title="Share on Twitter">
+            <i class="fab fa-twitter"></i>
+        </a>
+        <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri|urlencode }}&title={{ project.title|urlencode }}&summary={{ project.short_description|urlencode }}" class="share-btn linkedin" target="_blank" title="Share on LinkedIn">
+            <i class="fab fa-linkedin-in"></i>
+        </a>
+        <button class="share-btn copy-link" title="Copy link to clipboard">
+            <i class="fas fa-link"></i>
+        </button>
+    </div>
+</div>
+
+<div class="project-navigation">
+    <div class="container">
+        <div class="nav-links">
+            {% if previous_project %}
+            <a href="{% url 'project_detail' slug=previous_project.slug %}" class="nav-link prev-project">
+                <i class="fas fa-arrow-left"></i>
+                <div class="nav-content">
+                    <span>Previous Project</span>
+                    <h4>{{ previous_project.title }}</h4>
+                </div>
+            </a>
+            {% endif %}
+            {% if next_project %}
+            <a href="{% url 'project_detail' slug=next_project.slug %}" class="nav-link next-project">
+                <div class="nav-content">
+                    <span>Next Project</span>
+                    <h4>{{ next_project.title }}</h4>
+                </div>
+                <i class="fas fa-arrow-right"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/project_detail.js' %}"></script>
+{% endblock %}

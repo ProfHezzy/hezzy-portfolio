@@ -1,15 +1,15 @@
-# forms.py
+# portfolio/forms.py
 from django import forms
-from .models import Blog, Comment, Project, ProjectImage, Skill
-# IMPORTANT: Import User model here to use in clean method logic if needed
-from django.contrib.auth import get_user_model
+from .models import Blog, Comment, Project, ProjectImage, Skill # Ensure all necessary models are imported
+from django.contrib.auth import get_user_model # Import User model
+from django.utils.text import slugify # For ProjectForm's clean_slug
 
 User = get_user_model() # Get the active user model
 
 class ContactForm(forms.Form):
     """
     Form for handling contact messages from the portfolio.
-    Maps to the Message model indirectly.
+    Maps to the Message model indirectly (view handles creation).
     """
     name = forms.CharField(
         max_length=100,
@@ -38,20 +38,21 @@ class CommentForm(forms.ModelForm):
     """
     content = forms.CharField(
         widget=forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Share your thoughts...', 'rows': 4}),
-        label=""
+        label="" # Label is often hidden in modern UIs, handled by placeholder
     )
 
     class Meta:
         model = Comment
-        fields = ['content', 'name', 'email', 'post', 'parent']
+        # CRITICAL FIX: Changed 'post' to 'blog_post' to match Comment model's ForeignKey
+        fields = ['content', 'name', 'email', 'blog_post', 'parent'] 
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Your Name'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Your Email (Optional)'}),
-            'post': forms.HiddenInput(),
+            'blog_post': forms.HiddenInput(), # Corrected field name
             'parent': forms.HiddenInput(),
         }
         labels = {
-            'name': '',
+            'name': '', # Labels for name/email are often left empty if placeholders are descriptive
             'email': '',
         }
 
@@ -64,7 +65,8 @@ class CommentForm(forms.ModelForm):
         # All fields are initially NOT required at the form level.
         # The custom 'clean' method will add specific requirements.
         self.fields['name'].required = False
-        self.fields['email'].required = False
+        self.fields['email'].required = False # Email is optional by default in the model
+        self.fields['content'].required = True # Content is always required
 
         # Pre-fill and make readonly for authenticated users
         if self.user and self.user.is_authenticated:
@@ -88,10 +90,10 @@ class CommentForm(forms.ModelForm):
         """
         cleaned_data = super().clean()
         name = cleaned_data.get('name')
-        email = cleaned_data.get('email') # Email is optional per model
-
-        # Content is a required field in the form, but let's add a backend check too
         content = cleaned_data.get('content')
+
+        # Content field is explicitly required in the form definition, but this adds a redundant check.
+        # It's good for robustness.
         if not content:
             self.add_error('content', "Comment content cannot be empty.")
 
@@ -105,22 +107,23 @@ class CommentForm(forms.ModelForm):
 
 
 class ProjectForm(forms.ModelForm):
-    # ... (rest of your ProjectForm and other forms remain the same) ...
     """
     ModelForm for creating and updating Project instances.
     Note: This form does not directly handle ProjectImage instances.
     ProjectImages should be managed separately (e.g., via Django Admin inline,
     or a separate formset if building a custom project submission interface).
     """
-    # You can customize widgets, add labels, or make fields required/optional here
-    description = forms.CharField(
-        widget=forms.Textarea(attrs={'rows': 4, 'placeholder': 'A concise overview for the project card.'}),
-        help_text="Short description displayed on the project card."
+    # CRITICAL FIX: Renamed 'description' to 'overview_content' to match model
+    overview_content = forms.CharField( 
+        widget=forms.Textarea(attrs={'rows': 8, 'placeholder': 'A detailed description for the project overview section.'}),
+        help_text="Detailed description displayed in the 'Project Overview' section (supports Markdown/HTML if using a rich text editor)."
     )
-    full_description = forms.CharField(
+    # No longer including 'description' as a field, since it's a property.
+    
+    full_description = forms.CharField( # This field seems to be unused in models.py now?
         required=False,
-        widget=forms.Textarea(attrs={'rows': 8, 'placeholder': 'A detailed description for the project modal.'}),
-        help_text="Detailed description for the project modal (supports Markdown/HTML if using a rich text editor)."
+        widget=forms.Textarea(attrs={'rows': 8, 'placeholder': 'An even more detailed description for a potential project modal.'}),
+        help_text="More detailed description for a potential project modal or extended content (optional)."
     )
     key_features = forms.CharField(
         required=False,
@@ -144,20 +147,24 @@ class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
         fields = [
-            'title', 'slug', 'description', 'full_description', 
-            'key_features', 'challenges_and_solutions', 'image', 'thumbnail', 
-            'live_demo_link', 'github_link', 'technologies', 'status', 
-            'start_date', 'end_date', 'featured'
+            'title', 'slug', 'short_description', 'overview_content', # Corrected field name
+            'key_features', 'challenges_and_solutions', 'featured_image', 'thumbnail', # Corrected image field name
+            'live_demo_link', 'github_link', 'documentation_url', # Added documentation_url
+            'technologies', 'status', 'start_date', 'end_date', 'featured',
+            'seo_description', 'seo_keywords' # Added SEO fields to the form
         ]
         widgets = {
-            'title': forms.TextInput(attrs={'placeholder': 'Project Title'}),
-            'slug': forms.TextInput(attrs={'placeholder': 'auto-generated if left blank'}),
-            'live_demo_link': forms.URLInput(attrs={'placeholder': 'https://example.com'}),
-            'github_link': forms.URLInput(attrs={'placeholder': 'https://github.com/your-repo'}),
-            'start_date': forms.DateInput(attrs={'type': 'date'}),
-            'end_date': forms.DateInput(attrs={'type': 'date'}),
-            # For status, you might use RadioSelect if choices are few, or Select if many
+            'title': forms.TextInput(attrs={'placeholder': 'Project Title', 'class': 'form-control'}),
+            'slug': forms.TextInput(attrs={'placeholder': 'auto-generated if left blank', 'class': 'form-control'}),
+            'live_demo_link': forms.URLInput(attrs={'placeholder': 'https://example.com', 'class': 'form-control'}),
+            'github_link': forms.URLInput(attrs={'placeholder': 'https://github.com/your-repo', 'class': 'form-control'}),
+            'documentation_url': forms.URLInput(attrs={'placeholder': 'https://docs.example.com', 'class': 'form-control'}), # Added widget for new field
+            'start_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'end_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-control'}),
+            'short_description': forms.Textarea(attrs={'rows': 2, 'placeholder': 'A concise one-liner summary.', 'class': 'form-control'}),
+            'seo_description': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Meta description for SEO (max ~160 chars).', 'class': 'form-control'}),
+            'seo_keywords': forms.TextInput(attrs={'placeholder': 'comma, separated, keywords', 'class': 'form-control'}),
         }
         # You can add help_texts or error_messages if needed
 
@@ -166,21 +173,35 @@ class ProjectForm(forms.ModelForm):
         Ensure slug is unique, even if auto-generated.
         """
         slug = self.cleaned_data.get('slug')
-        if not slug:
-            slug = slugify(self.cleaned_data.get('title'))
+        title = self.cleaned_data.get('title')
+
+        if not slug and title: # Only auto-generate if slug is empty and title exists
+            slug = slugify(title)
+        elif not slug and not title: # If both are empty, raise an error for title
+            raise forms.ValidationError("Title is required to generate a slug.")
             
         # Check for uniqueness, excluding current instance for updates
-        if Project.objects.filter(slug=slug).exclude(pk=self.instance.pk if self.instance else None).exists():
+        qs = Project.objects.filter(slug=slug)
+        if self.instance and self.instance.pk: # If updating an existing object
+            qs = qs.exclude(pk=self.instance.pk)
+            
+        if qs.exists():
             raise forms.ValidationError(f"A project with the slug '{slug}' already exists. Please choose a different title or slug.")
         
         return slug
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Optional: Add Bootstrap/Tailwind classes to all fields
+        # Apply form-control class to ImageField widgets (File Input)
+        if 'featured_image' in self.fields:
+            self.fields['featured_image'].widget.attrs.update({'class': 'form-control-file'})
+        if 'thumbnail' in self.fields:
+            self.fields['thumbnail'].widget.attrs.update({'class': 'form-control-file'})
+        
+        # Apply form-control to all other relevant fields where it might not be explicitly set
         for field_name, field in self.fields.items():
-            if isinstance(field.widget, (forms.TextInput, forms.EmailInput, forms.URLInput, forms.Textarea, forms.DateInput, forms.Select)):
-                field.widget.attrs.update({'class': 'form-control'})
-            elif isinstance(field.widget, forms.ClearableFileInput):
-                field.widget.attrs.update({'class': 'form-control-file'})
-            # CheckboxSelectMultiple does not need 'form-control' class generally
+            if isinstance(field.widget, (forms.TextInput, forms.EmailInput, forms.URLInput, 
+                                         forms.Textarea, forms.DateInput, forms.Select)):
+                # Only add if it's not already set by Meta.widgets or a specific override
+                if 'class' not in field.widget.attrs:
+                    field.widget.attrs.update({'class': 'form-control'})

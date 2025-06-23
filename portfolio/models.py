@@ -5,11 +5,11 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth import get_user_model # Import User model
 from django.templatetags.static import static
+from taggit.managers import TaggableManager # Import TaggableManager for Blog.tags
 
 User = get_user_model() # Get the currently active user model
 
 class Skill(models.Model):
-    # ... (Your existing Skill model code) ...
     CATEGORY_CHOICES = [
         ('frontend', 'Frontend'),
         ('backend', 'Backend'),
@@ -38,7 +38,6 @@ class Skill(models.Model):
         return self.name
 
 class Project(models.Model):
-    # ... (Your existing Project model code, including new fields like full_description, etc.) ...
     STATUS_CHOICES = [
         ('completed', 'Completed'),
         ('in-progress', 'In Progress'),
@@ -47,22 +46,52 @@ class Project(models.Model):
     
     title = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True, blank=True)
-    description = models.TextField(help_text="Short description for project card and overview.")
-    full_description = models.TextField(blank=True, null=True, help_text="Detailed description for the project modal.")
+    short_description = models.CharField(
+        max_length=255,
+        help_text="A concise summary for project cards and overview section.",
+        default="No short description yet"
+    )
+    overview_content = models.TextField(help_text="Detailed description/content for the 'Project Overview' section.", default="No overview yet")
     key_features = models.TextField(blank=True, null=True, help_text="List key features, one per line or use Markdown.")
     challenges_and_solutions = models.TextField(blank=True, null=True, help_text="Describe challenges encountered and their solutions.")
-    image = models.ImageField(upload_to='projects/', blank=True, null=True, help_text="Main image for project card/thumbnail.")
+    
+    featured_image = models.ImageField(upload_to='projects/', blank=True, null=True, help_text="Main image for project card and hero section.")
+    
     thumbnail = models.ImageField(upload_to='projects/thumbnails/', blank=True, null=True, help_text="Optional, smaller thumbnail image.")
     live_demo_link = models.URLField(blank=True, null=True)
     github_link = models.URLField(blank=True, null=True)
+    documentation_url = models.URLField(blank=True, null=True)
     technologies = models.ManyToManyField(Skill, related_name='projects')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='completed')
     start_date = models.DateField(blank=True, null=True)
-    end_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True) 
     featured = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # FIX: Add missing fields
+    project_type = models.CharField(
+        max_length=100, 
+        blank=True, 
+        null=True, 
+        help_text="e.g., Web Application, Mobile App, Data Analysis, Portfolio Site"
+    )
+    client = models.CharField(max_length=100, blank=True, null=True, help_text="Name of the client or organization")
+    version = models.CharField(max_length=20, blank=True, null=True, help_text="e.g., 1.0.0, Beta")
+
+
+    seo_description = models.TextField(
+        blank=True,
+        null=True,
+        help_text="A brief description for search engines (meta description). Max 160 characters is typical."
+    )
+    seo_keywords = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Comma-separated keywords for search engines (optional for modern SEO, but good for internal tracking)."
+    )
+
     class Meta:
         ordering = ['-featured', '-end_date', '-created_at']
     
@@ -83,12 +112,18 @@ class Project(models.Model):
             return 'frontend'
         elif 'backend' in tech_categories:
             return 'backend'
-        elif 'mobile' in tech_categories:
-            return 'mobile'
         return 'other'
 
+    @property
+    def completion_date(self):
+        return self.end_date
+
+    @property
+    def description(self):
+        return self.overview_content
+
+
 class ProjectImage(models.Model):
-    # ... (Your existing ProjectImage model code) ...
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='gallery_images')
     image = models.ImageField(upload_to='projects/gallery_images/')
     caption = models.CharField(max_length=255, blank=True, null=True)
@@ -112,16 +147,16 @@ class Blog(models.Model):
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     content = models.TextField()
     excerpt = models.TextField(blank=True, null=True, max_length=500)
-    featured_image = models.ImageField(upload_to='media/blog/', blank=True, null=True)
+    featured_image = models.ImageField(upload_to='blog/', blank=True, null=True) 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     published_at = models.DateTimeField(blank=True, null=True)
-    tags = models.ManyToManyField('Tag', related_name='blogs', blank=True)
+    tags = TaggableManager() 
     views = models.PositiveIntegerField(default=0)
     
-    # NEW: Many-to-Many field for users who liked the post
     liked_by = models.ManyToManyField(User, related_name='liked_posts', blank=True)
+    likes_count = models.PositiveIntegerField(default=0)  # <-- Add this line
 
     class Meta:
         ordering = ['-published_at']
@@ -136,16 +171,13 @@ class Blog(models.Model):
             self.published_at = timezone.now()
         super().save(*args, **kwargs)
 
-    # NEW: Property to get the count of likes easily
-    @property
-    def likes_count(self):
-        return self.liked_by.count()
+    # @property
+    # def likes_count(self):
+    #     return self.liked_by.count()
 
 
 class Comment(models.Model):
-    # ... (Your existing Comment model code, including get_author_name and get_avatar_url properties) ...
-    from django.templatetags.static import static # Import static
-    post = models.ForeignKey('Blog', on_delete=models.CASCADE, related_name='comments')
+    blog_post = models.ForeignKey(Blog, on_delete=models.CASCADE, related_name='comments') 
     author = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=100, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
@@ -158,7 +190,7 @@ class Comment(models.Model):
         ordering = ['created_at']
 
     def __str__(self):
-        return f"Comment by {self.get_author_name} on {self.post.title}"
+        return f"Comment by {self.get_author_name} on {self.blog_post.title}"
 
     @property
     def is_reply(self):
@@ -167,34 +199,18 @@ class Comment(models.Model):
     @property
     def get_author_name(self):
         if self.author:
-            return self.author.get_full_name() or self.author.username
+            return self.author.get_full_name() or self.author.username 
         return self.name or "Anonymous"
 
     @property
     def get_avatar_url(self):
         if self.author:
-            if hasattr(self.author, 'profile') and self.author.profile.avatar:
-                return self.author.profile.avatar.url
-            return static('images/default_user_avatar.jpg')
+            return static('images/default_user_avatar.jpg') 
         else:
             return static('images/default_comment_avatar.jpg')
 
 
-class Tag(models.Model):
-    # ... (Your existing Tag model code) ...
-    name = models.CharField(max_length=50, unique=True)
-    slug = models.SlugField(max_length=50, unique=True, blank=True)
-    
-    def __str__(self):
-        return self.name
-    
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.name)
-        super().save(*args, **kwargs)
-
 class Experience(models.Model):
-    # ... (Your existing Experience model code) ...
     title = models.CharField(max_length=200)
     company = models.CharField(max_length=200)
     location = models.CharField(max_length=100, blank=True, null=True)
@@ -226,8 +242,8 @@ class Experience(models.Model):
             self.end_date = None
         super().save(*args, **kwargs)
 
+
 class Education(models.Model):
-    # ... (Your existing Education model code) ...
     degree = models.CharField(max_length=200)
     institution = models.CharField(max_length=200)
     major = models.CharField(max_length=100, blank=True, null=True)
@@ -244,8 +260,8 @@ class Education(models.Model):
     def __str__(self):
         return f"{self.degree} from {self.institution}"
 
+
 class Certification(models.Model):
-    # ... (Your existing Certification model code) ...
     name = models.CharField(max_length=255)
     issuing_organization = models.CharField(max_length=200)
     credential_id = models.CharField(max_length=100, blank=True, null=True)
@@ -268,8 +284,8 @@ class Certification(models.Model):
             return self.expiry_date < timezone.now().date()
         return False
 
+
 class Award(models.Model):
-    # ... (Your existing Award model code) ...
     name = models.CharField(max_length=255)
     awarding_organization = models.CharField(max_length=200)
     date_received = models.DateField(blank=True, null=True)
@@ -283,8 +299,8 @@ class Award(models.Model):
     def __str__(self):
         return self.name
 
+
 class Service(models.Model):
-    # ... (Your existing Service model code) ...
     name = models.CharField(max_length=150)
     slug = models.SlugField(max_length=150, unique=True, blank=True)
     description = models.TextField()
@@ -303,8 +319,8 @@ class Service(models.Model):
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
 
+
 class Testimonial(models.Model):
-    # ... (Your existing Testimonial model code) ...
     name = models.CharField(max_length=200)
     company = models.CharField(max_length=200, blank=True, null=True)
     role = models.CharField(max_length=200, blank=True, null=True)
@@ -323,8 +339,8 @@ class Testimonial(models.Model):
     def __str__(self):
         return f"Testimonial by {self.name}"
 
+
 class ContactInfo(models.Model):
-    # ... (Your existing ContactInfo model code) ...
     email = models.EmailField()
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
@@ -340,8 +356,8 @@ class ContactInfo(models.Model):
             return
         super().save(*args, **kwargs)
 
+
 class SocialLink(models.Model):
-    # ... (Your existing SocialLink model code) ...
     PLATFORM_CHOICES = [
         ('github', 'GitHub'),
         ('linkedin', 'LinkedIn'),
@@ -371,20 +387,17 @@ class SocialLink(models.Model):
         if not self.name:
             self.name = self.get_platform_display()
         if not self.icon:
-            # Note: For 'Dev.to', Font Awesome might use 'dev' or 'dev-to'
-            # You might need to adjust this if 'fab fa-dev' doesn't work for your version.
-            self.icon = f"fab fa-{self.platform}" if self.platform != 'dev' else "fab fa-dev" # Specific for dev.to
+            self.icon = f"fab fa-{self.platform}" if self.platform != 'dev' else "fab fa-dev" 
         super().save(*args, **kwargs)
 
 class SiteSetting(models.Model):
-    # ... (Your existing SiteSetting model code) ...
     site_title = models.CharField(max_length=255, default="My Portfolio")
     tagline = models.CharField(max_length=255, blank=True, null=True)
     about_me = models.TextField(blank=True, null=True)
-    profile_picture = models.ImageField(upload_to='profile/', blank=True, null=True)
+    profile_picture = models.ImageField(upload_to='profile/', blank=True, null=True) 
     resume = models.FileField(upload_to='resume/', blank=True, null=True)
-    seo_description = models.TextField(blank=True, null=True)
-    seo_keywords = models.CharField(max_length=255, blank=True, null=True)
+    seo_description = models.TextField(blank=True, null=True, help_text="Default meta description for pages without specific SEO content. Max 160 chars.")
+    seo_keywords = models.CharField(max_length=255, blank=True, null=True, help_text="Default meta keywords for general site pages.")
     google_analytics_id = models.CharField(max_length=50, blank=True, null=True)
     maintenance_mode = models.BooleanField(default=False)
     
@@ -397,7 +410,6 @@ class SiteSetting(models.Model):
         super().save(*args, **kwargs)
 
 class Message(models.Model):
-    # ... (Your existing Message model code) ...
     name = models.CharField(max_length=100)
     email = models.EmailField()
     subject = models.CharField(max_length=200)
@@ -410,6 +422,3 @@ class Message(models.Model):
     
     def __str__(self):
         return f"Message from {self.name}"
-    
-
-

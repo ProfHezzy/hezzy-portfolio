@@ -1,206 +1,108 @@
 # portfolio/views.py
-from django.shortcuts import render, get_object_or_404
-from .models import (
-    Skill, Project, Blog, Experience, Education, Certification, Award,
-    Service, Testimonial, ContactInfo, SocialLink, SiteSetting, Comment, Message, User # Ensure User is imported
-)
-from .forms import ContactForm, CommentForm
-from django.core.mail import send_mail
-from django.conf import settings
+from django.shortcuts import render, get_object_or_404, redirect
+from django.db.models import Q # For complex queries
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_GET
+from django.core.mail import send_mail # For contact form email sending
+from django.conf import settings # To access EMAIL_HOST_USER, etc.
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Q
-from django.contrib.auth.decorators import login_required # NEW: For like functionality
+from django.contrib.auth.decorators import login_required # For like functionality
+from django.contrib.auth import get_user_model # Ensure User is imported
+from django.utils import timezone # For date handling
+from taggit.models import Tag # Import Tag model for blog post tagging
+from django.db.models import Q # For complex queries in blog filtering
+from django.db import models # Import models for type hinting and validation
 
-# Define a default avatar URL. Ensure this path exists in your static files.
-DEFAULT_AVATAR_URL = '/static/images/default_user_avatar.jpg'
+# Import all models from your portfolio app
+from .models import (
+    Skill, Project, Blog, Experience, Education, Certification, Award,
+    Service, Testimonial, ContactInfo, SocialLink, SiteSetting, Comment, Message
+)
+# Import your forms
+from .forms import ContactForm, CommentForm 
+
+User = get_user_model() # Get the currently active user model
 
 
-def get_common_context():
-    """Helper function to fetch site-wide settings."""
-    return {'site_settings': SiteSetting.objects.first() or SiteSetting()}
-
-@require_GET
-@require_GET
-def home(request):
-    # ... (your existing home view) ...
-    context = get_common_context()
+# --- Global Context Helper ---
+def get_global_context():
+    """
+    Helper function to fetch site-wide settings and social links,
+    typically needed on most pages.
+    """
+    site_settings = SiteSetting.objects.first() 
+    if not site_settings:
+        # Create a default SiteSetting if none exists, to prevent errors on first run
+        site_settings = SiteSetting.objects.create(
+            site_title="My Portfolio", 
+            tagline="A Passionate Developer",
+            about_me="A dedicated full-stack developer."
+        )
     
-    context['skills'] = Skill.objects.all().order_by('order')
-    context['projects'] = Project.objects.filter(featured=True).order_by('-created_at')[:3]
-    context['experiences'] = Experience.objects.all().order_by('-start_date')
-    context['educations'] = Education.objects.all().order_by('-graduation_date')
-    context['certifications'] = Certification.objects.all().order_by('-issue_date')
-    context['awards'] = Award.objects.all().order_by('-date_received')
-    context['services'] = Service.objects.all().order_by('order')
-    context['testimonials'] = Testimonial.objects.all().order_by('-featured', '-date_given')
-    context['contact_info'] = ContactInfo.objects.first() or ContactInfo()
-    context['social_links'] = SocialLink.objects.filter(active=True).order_by('order')
+    social_links = SocialLink.objects.filter(active=True).order_by('order')
+    
+    return {
+        'site_settings': site_settings,
+        'social_links': social_links,
+    }
 
-    context['latest_blog_posts'] = Blog.objects.filter(status='published').order_by('-published_at')[:3]
 
-    context['contact_form'] = ContactForm() 
+# --- Portfolio Core Views ---
+
+@require_GET # Redundant decorator removed, only one is needed
+def home(request):
+    """Homepage view."""
+    context = get_global_context() # Use the standardized helper
+    
+    context.update({
+        'skills': Skill.objects.filter(featured=True).order_by('order'), # Only featured skills for home
+        'projects': Project.objects.filter(featured=True, status='completed').order_by('-end_date')[:3], # Featured & completed
+        'experiences': Experience.objects.all().order_by('-start_date'),
+        'educations': Education.objects.all().order_by('-graduation_date'),
+        'certifications': Certification.objects.all().order_by('-issue_date'),
+        'awards': Award.objects.filter(featured=True).order_by('-date_received'), # Only featured awards for home
+        'services': Service.objects.filter(featured=True).order_by('order'), # Only featured services for home
+        'testimonials': Testimonial.objects.filter(featured=True).order_by('-date_given')[:3], # Featured testimonials
+        'contact_info': ContactInfo.objects.first(), # Could be None if not created
+        'latest_blog_posts': Blog.objects.filter(status='published').order_by('-published_at')[:3],
+        'contact_form': ContactForm(), # For the contact form often on the homepage
+    })
     
     return render(request, 'portfolio/index.html', context)
 
 
 @require_GET
-def projects_list(request):
-    # ... (your existing projects_list view) ...
-    context = get_common_context()
-    project_list = Project.objects.all().order_by('-created_at')
-    
-    paginator = Paginator(project_list, 9)
-    page = request.GET.get('page')
-    try:
-        projects_paged = paginator.page(page)
-    except PageNotAnInteger:
-        projects_paged = paginator.page(1)
-    except EmptyPage:
-        projects_paged = paginator.page(paginator.num_pages)
-    
-    context['projects'] = projects_paged
-    return render(request, 'portfolio/projects.html', context)
-
-@require_GET
-def project_detail(request, slug):
-    # ... (your existing project_detail view) ...
-    context = get_common_context()
-    project = get_object_or_404(Project, slug=slug)
-    context['project'] = project
-    context['related_projects'] = Project.objects.filter(
-        technologies__in=project.technologies.all()
-    ).exclude(pk=project.pk).distinct().order_by('-created_at')[:3]
-    return render(request, 'portfolio/project_detail.html', context)
-
-@require_GET
-def blog(request):
-    # ... (your existing blog view) ...
-    context = get_common_context()
-    post_list = Blog.objects.filter(status='published').order_by('-published_at')
-
-    paginator = Paginator(post_list, 10)
-    page = request.GET.get('page')
-    try:
-        posts_paged = paginator.page(page)
-    except PageNotAnInteger:
-        posts_paged = paginator.page(1)
-    except EmptyPage:
-        posts_paged = paginator.page(paginator.num_pages)
-    
-    context['posts'] = posts_paged
-    return render(request, 'portfolio/blog.html', context)
-
-@require_GET
-def blog_detail(request, slug):
-    """View for a specific blog post's details with comments and likes."""
-    context = get_common_context()
-    post = get_object_or_404(Blog, slug=slug, status='published')
-    
-    # Retrieve comments that are not replies (parent is null)
-    # Then prefetch their replies to reduce database queries for nested comments
-    comments = Comment.objects.filter(
-        post=post, active=True, parent__isnull=True
-    ).prefetch_related('replies').order_by('created_at') # Order by oldest first for display
-
-    context['post'] = post
-    context['comments'] = comments
-    
-    # Pass request.user to the CommentForm instance
-    context['comment_form'] = CommentForm(initial={'post': post.id}, user=request.user) # <--- IMPORTANT CHANGE
-    
-    context['related_posts'] = Blog.objects.filter(
-        tags__in=post.tags.all(), status='published'
-    ).exclude(pk=post.pk).distinct().order_by('-published_at')[:3]
-
-    context['social_links'] = SocialLink.objects.filter(active=True).order_by('order')
-
-    # Determine if the current user has liked this post
-    has_user_liked = False
-    if request.user.is_authenticated:
-        has_user_liked = post.liked_by.filter(id=request.user.id).exists()
-    context['has_user_liked'] = has_user_liked
-
-    return render(request, 'portfolio/blog_detail.html', context)
-
-@require_POST
-def post_comment(request, slug):
-    """
-    AJAX endpoint to handle comment submissions.
-    Expected to return JSON response.
-    """
-    post = get_object_or_404(Blog, slug=slug, status='published')
-    
-    # Pass request.user to the CommentForm instance
-    form = CommentForm(request.POST, user=request.user) # <--- IMPORTANT CHANGE
-    
-    if form.is_valid():
-        comment = form.save(commit=False)
-        comment.post = post 
-        
-        # Set author if user is authenticated, and nullify name/email if they exist
-        if request.user.is_authenticated:
-            comment.author = request.user
-            comment.name = None # Ensure name/email from form are not saved if user is authenticated
-            comment.email = None
-        
-        parent_id = request.POST.get('parent')
-        if parent_id:
-            try:
-                parent_comment = Comment.objects.get(pk=parent_id, post=post)
-                comment.parent = parent_comment
-            except Comment.DoesNotExist:
-                return JsonResponse({'success': False, 'errors': {'parent': ['Invalid parent comment.']}}, status=400)
-        
-        comment.save()
-
-        # Return consistent data for JS to render
-        return JsonResponse({
-            'success': True,
-            'comment': {
-                'id': comment.id,
-                'author': comment.get_author_name,
-                'content': comment.content,
-                'created_at': comment.created_at.strftime('%b %d, %Y, %I:%M %p'),
-                'avatar_url': comment.get_avatar_url,
-                'parent_id': comment.parent.id if comment.parent else None,
-            },
-            'message': 'Comment posted successfully!'
-        })
-    else:
-        # If form is not valid, return errors in a structured way
-        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-
-
-@require_POST
-def like_post(request, slug):
-    # ... (your existing like_post view) ...
-    post = get_object_or_404(Blog, slug=slug, status='published')
-
-    user = request.user
-    has_liked = False
-    if post.liked_by.filter(id=user.id).exists():
-        post.liked_by.remove(user)
-        message = 'Post unliked.'
-        has_liked = False
-    else:
-        post.liked_by.add(user)
-        message = 'Post liked successfully!'
-        has_liked = True
-    
-    return JsonResponse({
-        'success': True,
-        'likes_count': post.likes_count,
-        'has_liked': has_liked,
-        'message': message
+def about(request):
+    """About page view."""
+    context = get_global_context()
+    context.update({
+        'experiences': Experience.objects.all().order_by('-start_date'),
+        'education': Education.objects.all().order_by('-graduation_date'),
+        'skills': Skill.objects.all().order_by('category', 'order'),
+        'certifications': Certification.objects.all().order_by('-issue_date'),
+        'awards': Award.objects.all().order_by('-date_received'),
     })
+    return render(request, 'portfolio/about.html', context)
 
 
-@require_POST
-def contact(request):
+@require_GET # This is for displaying the contact form for GET requests
+def contact_page(request): # Renamed to contact_page to avoid conflict with @require_POST contact view
+    """View to display the contact form and info."""
+    context = get_global_context()
+    contact_info = ContactInfo.objects.first()
+    form = ContactForm() # Always provide an empty form for GET requests
+    
+    context.update({
+        'contact_info': contact_info,
+        'form': form,
+    })
+    return render(request, 'portfolio/contact.html', context)
+
+
+@require_POST # This is for handling AJAX POST submissions to contact form
+def submit_contact_form(request): # Renamed to submit_contact_form
     """
-    AJAX endpoint for handling contact form submissions from the landing page.
+    AJAX endpoint for handling contact form submissions.
     Returns JSON response.
     """
     form = ContactForm(request.POST)
@@ -218,54 +120,362 @@ def contact(request):
         )
 
         try:
+            # Ensure settings.DEFAULT_FROM_EMAIL and settings.CONTACT_EMAIL are configured
             send_mail(
                 subject,
                 f"Name: {name}\nEmail: {email}\n\nMessage:\n{message_content}",
                 settings.DEFAULT_FROM_EMAIL,
-                [settings.CONTACT_EMAIL],
+                [settings.CONTACT_EMAIL], # Replace with your actual recipient email
                 fail_silently=False,
             )
             return JsonResponse({'success': True, 'message': 'Message sent successfully!'}, status=200)
         except Exception as e:
-            print(f"Error sending email: {e}")
+            print(f"Error sending email: {e}") # Log the error
             return JsonResponse({'success': False, 'message': 'Failed to send message. Please try again later.'}, status=500)
     else:
+        # Return form errors in a structured JSON response
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
+
+# --- Projects Views ---
+
+@require_GET
+def projects_list(request): # Kept original name projects_list as in your urls/template
+    """View to display a list of all projects."""
+    context = get_global_context()
+    project_list = Project.objects.filter(status='completed').order_by('-end_date') # Filter for completed projects
+    
+    paginator = Paginator(project_list, 9)
+    page = request.GET.get('page')
+    try:
+        projects_paged = paginator.page(page)
+    except PageNotAnInteger:
+        projects_paged = paginator.page(1)
+    except EmptyPage:
+        projects_paged = paginator.page(paginator.num_pages)
+    
+    context['projects'] = projects_paged
+    return render(request, 'portfolio/projects.html', context)
+
+
+@require_GET
+def project_detail(request, slug):
+    """
+    View to display a single project's details.
+    """
+    project = get_object_or_404(Project, slug=slug, status='completed') # Ensure project is completed
+    context = get_global_context()
+
+    # Fetch previous and next projects based on completion_date (end_date in model)
+    # Using 'id' as a secondary sort to ensure consistent ordering for prev/next
+    all_projects = Project.objects.filter(status='completed').order_by('end_date', 'id')
+    project_list = list(all_projects)
+    
+    current_project_index = -1
+    for i, p in enumerate(project_list):
+        if p.id == project.id:
+            current_project_index = i
+            break
+
+    previous_project = None
+    next_project = None
+
+    if current_project_index != -1:
+        if current_project_index > 0:
+            previous_project = project_list[current_project_index - 1]
+        if current_project_index < len(project_list) - 1:
+            next_project = project_list[current_project_index + 1]
+
+    # Optional: If no prev/next, wrap around to loop through projects (e.g., from last to first, or first to last)
+    # This creates an infinite loop of navigation. Adjust as per desired UX.
+    if len(project_list) > 1: # Only wrap around if there's more than one project
+        if not previous_project:
+            previous_project = project_list[-1]
+        if not next_project:
+            next_project = project_list[0]
+
+    # Fetch related projects (example: by common technologies, excluding current project)
+    project_tech_ids = project.technologies.values_list('id', flat=True)
+    related_projects = Project.objects.filter(
+        technologies__id__in=project_tech_ids, status='completed'
+    ).exclude(
+        pk=project.pk 
+    ).distinct().order_by('-end_date')[:3] 
+
+    # If not enough related projects, fill with other recent completed projects
+    if related_projects.count() < 3:
+        remaining_count = 3 - related_projects.count()
+        if remaining_count > 0:
+            other_recent_projects = Project.objects.filter(status='completed').exclude(
+                Q(pk=project.pk) | Q(id__in=[p.id for p in related_projects])
+            ).order_by('-end_date')[:remaining_count]
+            related_projects = list(related_projects) + list(other_recent_projects)
+
+
+    context.update({
+        'project': project,
+        'previous_project': previous_project,
+        'next_project': next_project,
+        'related_projects': related_projects,
+    })
+    return render(request, 'portfolio/project_detail.html', context)
 
 @require_GET
 def projects_api(request):
     """
-    API endpoint to return project data in JSON format for projects.js.
+    API endpoint to return project data in JSON format for client-side use (e.g., projects.js).
     Supports basic client-side filtering and searching by returning all data
     and letting JavaScript handle the filtering.
-    For very large datasets, server-side filtering would be more efficient.
     """
-    projects_queryset = Project.objects.filter(status='completed').order_by('-created_at')
+    projects_queryset = Project.objects.filter(status='completed').order_by('-end_date')
 
     projects_data = []
     for project in projects_queryset:
-        gallery_images_urls = [img.image.url for img in project.gallery_images.all()]
+        # Access gallery images via the correct related_name
+        gallery_images_urls = [img.image.url for img in project.gallery_images.all().order_by('order')]
 
         technology_names = [tech.name for tech in project.technologies.all()]
 
-        main_project_image_url = project.image.url if project.image else (gallery_images_urls[0] if gallery_images_urls else None)
+        # Use featured_image, fall back to first gallery image if available
+        main_project_image_url = project.featured_image.url if project.featured_image else (gallery_images_urls[0] if gallery_images_urls else None)
 
         project_dict = {
             'id': project.id,
             'title': project.title,
-            'description': project.description,
-            'full_description': project.full_description,
+            'slug': project.slug, # Include slug for direct linking
+            'short_description': project.short_description, # Use short_description
+            'description': project.description, # This is the property mapping to overview_content
+            'full_description': project.overview_content, # This field is still in your model, include it
             'category': project.get_main_category,
-            'date': project.end_date.strftime('%B %Y') if project.end_date else project.start_date.strftime('%B %Y'),
+            'completion_date': project.end_date.strftime('%B %Y') if project.end_date else (project.start_date.strftime('%B %Y') if project.start_date else None),
             'technologies': technology_names,
-            'main_image_url': main_project_image_url,
-            'images': gallery_images_urls,
-            'liveUrl': project.live_demo_link,
-            'codeUrl': project.github_link,
-            'features': project.key_features.strip().splitlines() if project.key_features else [],
-            'challenges': project.challenges_and_solutions or '',
+            'featured_image_url': main_project_image_url, # Renamed for clarity
+            'gallery_images_urls': gallery_images_urls, # Renamed for clarity
+            'live_url': project.live_demo_link, # Renamed to match template/model
+            'github_url': project.github_link, # Renamed to match template/model
+            'documentation_url': project.documentation_url,
+            'key_features': project.key_features.strip().splitlines() if project.key_features else [], # Changed from 'features'
+            'challenges_and_solutions': project.challenges_and_solutions or '', # Changed from 'challenges'
+            'project_type': project.project_type,
+            'client': project.client,
+            'version': project.version,
+            'seo_description': project.seo_description,
+            'seo_keywords': project.seo_keywords,
+            # Example for your API serialization:
+            'main_image_url': project.featured_image.url if project.featured_image else '/static/images/default_project_image.jpg',
+            # Optionally, provide an images array if you want a gallery:
+            'images': [project.featured_image.url] if project.featured_image else [],
         }
         projects_data.append(project_dict)
 
     return JsonResponse(projects_data, safe=False)
+
+
+# --- Blog Views ---
+
+@require_GET
+def blog_list(request): # Standardized name to blog_list
+    """View to display a list of all published blog posts."""
+    context = get_global_context()
+    blog_posts_list = Blog.objects.filter(status='published').order_by('-published_at')
+
+    # Apply tag filter if 'tag' parameter is present
+    tag_slug = request.GET.get('tag')
+    if tag_slug:
+        tag = get_object_or_404(Tag, slug=tag_slug)
+        blog_posts_list = blog_posts_list.filter(tags=tag)
+        context['current_tag'] = tag
+
+    # Apply search query filter if 'q' parameter is present
+    query = request.GET.get('q')
+    if query:
+        blog_posts_list = blog_posts_list.filter(
+            Q(title__icontains=query) |
+            Q(content__icontains=query) |
+            Q(excerpt__icontains=query) |
+            Q(tags__name__icontains=query)
+        ).distinct()
+        context['search_query'] = query
+
+    paginator = Paginator(blog_posts_list, 10)
+    page = request.GET.get('page')
+    try:
+        posts_paged = paginator.page(page)
+    except PageNotAnInteger:
+        posts_paged = paginator.page(1)
+    except EmptyPage:
+        posts_paged = paginator.page(paginator.num_pages)
+    
+    context['blog_posts'] = posts_paged # Changed to 'blog_posts' for consistency
+    context['all_tags'] = Tag.objects.all().order_by('name') # Pass all tags for tag cloud/filter
+    return render(request, 'portfolio/blog.html', context)
+
+
+@require_GET
+def blog_detail(request, slug):
+    """
+    View for a specific blog post's details with comments and likes.
+    This view also handles comment form submission for GET requests (initial display).
+    """
+    blog_post = get_object_or_404(Blog, slug=slug, status='published')
+    context = get_global_context()
+
+    # Increment post views (only on GET requests to avoid incrementing on form submissions)
+    blog_post.views += 1
+    blog_post.save()
+
+    # Comments for this blog post (top-level and active)
+    # Using 'replies' as related_name in Comment model, so prefetch that.
+    comments = Comment.objects.filter(
+        blog_post=blog_post, active=True, parent__isnull=True
+    ).prefetch_related('replies').order_by('created_at') 
+
+    # Pass request.user to the CommentForm instance for initial data and readonly fields
+    comment_form = CommentForm(initial={'blog_post': blog_post.id}, user=request.user) 
+    
+    # Fetch related blog posts (e.g., by common tags)
+    blog_tags_ids = blog_post.tags.values_list('id', flat=True)
+    related_blogs = Blog.objects.filter(
+        status='published'
+    ).filter(
+        tags__id__in=blog_tags_ids
+    ).exclude(
+        pk=blog_post.pk 
+    ).distinct().order_by('-published_at')[:3]
+
+    # If not enough related blogs, fill with other recent published blogs
+    if related_blogs.count() < 3:
+        remaining_count = 3 - related_blogs.count()
+        if remaining_count > 0:
+            other_recent_blogs = Blog.objects.filter(
+                status='published'
+            ).exclude(
+                Q(pk=blog_post.pk) | Q(id__in=[b.id for b in related_blogs])
+            ).order_by('-published_at')[:remaining_count]
+            related_blogs = list(related_blogs) + list(other_recent_blogs)
+
+    # Calculate total articles and total views for author bio (can be optimized with aggregation)
+    total_articles = Blog.objects.filter(status='published').count()
+    total_blog_views = Blog.objects.filter(status='published').aggregate(total_views=models.Sum('views'))['total_views'] or 0
+    
+    # Calculate years of experience (example - adjust logic based on your needs)
+    # Assuming start_year in SiteSetting or calculated from first Experience
+    years_experience = 0
+    first_experience = Experience.objects.order_by('start_date').first()
+    if first_experience:
+        years_experience = timezone.now().year - first_experience.start_date.year
+
+
+    context.update({
+        'blog_post': blog_post, # Use 'blog_post' variable name consistently
+        'comments': comments,
+        'comment_form': comment_form, 
+        'related_blogs': related_blogs,
+        'has_user_liked': blog_post.liked_by.filter(id=request.user.id).exists() if request.user.is_authenticated else False, # Re-check like status
+        'blog_post_count': total_articles, # For author bio
+        'total_blog_views': total_blog_views, # For author bio
+        'years_experience': years_experience, # For author bio
+    })
+    return render(request, 'portfolio/blog_detail.html', context)
+
+
+@require_POST
+def post_comment(request, slug): # This view processes the comment form submission
+    """
+    AJAX endpoint to handle comment submissions for blog posts.
+    Expected to return JSON response.
+    """
+    blog_post = get_object_or_404(Blog, slug=slug, status='published')
+    
+    # Pass request.user to the CommentForm instance for proper validation and data saving
+    form = CommentForm(request.POST, user=request.user) 
+    
+    if form.is_valid():
+        comment = form.save(commit=False)
+        # CRITICAL FIX: Assign to blog_post, not post
+        comment.blog_post = blog_post 
+        
+        # Set author if user is authenticated, and ensure name/email are not redundantly saved for them
+        if request.user.is_authenticated:
+            comment.author = request.user
+            comment.name = None # Clear name/email from form for authenticated users
+            comment.email = None
+        
+        parent_id = form.cleaned_data.get('parent') # Get parent ID from cleaned data
+        if parent_id:
+            try:
+                # Ensure parent comment belongs to the same blog post
+                parent_comment = Comment.objects.get(pk=parent_id, blog_post=blog_post) 
+                comment.parent = parent_comment
+            except Comment.DoesNotExist:
+                return JsonResponse({'success': False, 'errors': {'parent': ['Invalid parent comment.']}}, status=400)
+        
+        comment.save()
+
+        # Return consistent data for JS to render
+        return JsonResponse({
+            'success': True,
+            'comment': {
+                'id': comment.id,
+                'author': comment.get_author_name, # Property from model
+                'content': comment.content,
+                'created_at': comment.created_at.strftime('%b %d, %Y, %I:%M %p'), # Consistent date format
+                'avatar_url': comment.get_avatar_url, # Property from model
+                'parent_id': comment.parent.id if comment.parent else None,
+            },
+            'message': 'Comment posted successfully!'
+        })
+    else:
+        # If form is not valid, return errors in a structured way (Django's default error format)
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+
+
+from django.db import transaction # Import transaction for atomicity
+# --- Blog Post Liking ---
+@require_POST
+def like_blog_post(request, slug):
+    """
+    Handles liking/unliking a blog post.
+    Allows anonymous users to like.
+    """
+    blog_post = get_object_or_404(Blog, slug=slug)
+
+    # For anonymous users, we can't use blog_post.liked_by.add(request.user)
+    # as request.user will be an AnonymousUser.
+    # Instead, we'll increment/decrement a simple counter.
+
+    # To prevent easy spamming by just refreshing,
+    # you might want to use sessions or client-side fingerprinting
+    # to track anonymous likes, but for pure counter, this is fine.
+    # For now, let's just increment/decrement.
+
+    # Check if the user (even anonymous) has 'liked' in their session
+    # This is a simple way to prevent easy double-liking from the same browser session.
+    liked_posts_in_session = request.session.get('liked_posts', [])
+    message = ''
+    has_liked = False # Will indicate if the post is currently liked by this session
+
+    with transaction.atomic(): # Ensure likes_count is updated safely
+        if blog_post.id in liked_posts_in_session:
+            # User (session) has already liked, so unlike
+            blog_post.likes_count = max(0, blog_post.likes_count - 1) # Ensure not negative
+            liked_posts_in_session.remove(blog_post.id)
+            message = 'Post unliked.'
+            has_liked = False
+        else:
+            # User (session) has not liked, so like
+            blog_post.likes_count += 1
+            liked_posts_in_session.append(blog_post.id)
+            message = 'Post liked successfully!'
+            has_liked = True
+
+        blog_post.save()
+        request.session['liked_posts'] = liked_posts_in_session
+
+    return JsonResponse({
+        'success': True,
+        'likes_count': blog_post.likes_count,
+        'has_liked': has_liked,
+        'message': message
+    })
+

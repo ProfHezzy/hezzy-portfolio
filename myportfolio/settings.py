@@ -14,8 +14,8 @@ SECRET_KEY = 'django-insecure-$=hym+7$inm*p0gj8((6yys$w$hd+(&$i!3w2^v)7b4#w58((%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-#ALLOWED_HOSTS = []
-ALLOWED_HOSTS = ['hezzy-portfolio.onrender.com', 'localhost']
+ALLOWED_HOSTS = []
+#ALLOWED_HOSTS = ['hezzy-portfolio.onrender.com', 'localhost']
 
 # Application definition
 
@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'taggit',
     'portfolio',
 ]
 

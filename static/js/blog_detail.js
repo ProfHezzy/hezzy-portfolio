@@ -327,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log('Reply appended to parent comment ID:', result.comment.parent_id);
                 } else {
                     console.warn('Parent comment div not found for reply:', result.comment.parent_id);
-                    commentsList.insertAdjacentHTML('afterbegin', newReplyHtml);
+                    commentsList.insertAdjacentHTML('afterbegin', newCommentHtml);
                 }
                 replyForm.reset();
                 replyForm.closest('.comment-reply-form').style.display = 'none';
@@ -626,7 +626,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Social share functionality ---
     function setupSocialSharing() {
-        document.querySelectorAll('.social-btn').forEach(button => { 
+        // Target both floating social buttons (.social-btn) and footer share buttons (.share-btn)
+        document.querySelectorAll('.social-btn, .share-btn').forEach(button => { 
             button.addEventListener('click', async function(e) { 
                 e.preventDefault();
 
@@ -679,12 +680,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 let shareUrl = '';
                 if (this.classList.contains('twitter')) {
-                    // CORRECTED LINE: Added &text=${encodedTitle}
                     shareUrl = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`;
                 } else if (this.classList.contains('linkedin')) {
                     shareUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${encodedUrl}&title=${encodedTitle}`;
                 } else if (this.classList.contains('facebook')) {
-                    // Facebook uses Open Graph tags on the target page for title/description/image
                     shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
                 }
 
@@ -741,24 +740,27 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Animations initialized.');
     }
 
+    /* like functionality */
     // --- Like Button Logic ---
     if (likeButton) {
         console.log('Like button element found (.like-btn). Attaching event listener.');
         likeButton.addEventListener('click', async function() {
             console.log('Like button clicked.');
 
-            if (!USER_IS_AUTHENTICATED) {
-                showToast('Please log in to like this post.', 'info');
-                console.warn('Like failed: User not authenticated.');
-                return;
-            }
+            // if (!USER_IS_AUTHENTICATED) {
+            //     showToast('Please log in to like this post.', 'info');
+            //     console.warn('Like failed: User not authenticated.');
+            //     return;
+            // }
             
+            // Use the postSlug from the global window object
             const likeUrl = `/blog/${postSlug}/like/`;
             console.log('Like API URL:', likeUrl);
 
-            this.disabled = true; 
+            this.disabled = true; // Disable button to prevent multiple clicks
+            // Optionally add a loading spinner
             const heartIcon = this.querySelector('.heart-icon');
-            const originalHeartHTML = heartIcon.innerHTML; 
+            const originalHeartHTML = heartIcon.innerHTML;
             heartIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
 
@@ -767,15 +769,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': getCookie('csrftoken'),
-                        'X-Requested-With': 'XMLHttpRequest' 
+                        'X-Requested-With': 'XMLHttpRequest' // Helps Django identify AJAX requests
                     },
                 });
 
-                if (!response.ok) { 
+                if (!response.ok) { // Check for HTTP errors (4xx, 5xx)
                     const errorText = await response.text();
                     console.error('HTTP Error during like API call:', response.status, response.statusText, errorText);
                     showToast(`Error: ${response.status} ${response.statusText}`, 'error');
-                    return; 
+                    return; // Stop execution on HTTP error
                 }
 
                 const data = await response.json();
@@ -802,7 +804,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error liking post (network/parsing error):', error);
                 showToast('A network error occurred while processing your like.', 'error');
             } finally {
-                this.disabled = false; 
+                this.disabled = false; // Always re-enable button
+                // Revert spinner to original heart icon
                 if (heartIcon) {
                     heartIcon.innerHTML = originalHeartHTML;
                 }
@@ -811,6 +814,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.warn('Like button element (.like-btn) not found. Like functionality disabled.');
     }
+
 
     // --- Add scroll to comments for the comment-btn ---
     const scrollToCommentsBtn = document.querySelector('.comment-btn.scroll-to-comments');
