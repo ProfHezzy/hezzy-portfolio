@@ -1,6 +1,40 @@
 {% extends "portfolio/base.html" %}
 {% load static custom_filters %}
 
+{% block head %}
+    <title>{{ post.title }} - Your Blog Name</title> {# Example: customize your title #}
+
+    <!-- Open Graph / Facebook / LinkedIn / General Social Media Tags -->
+    <meta property="og:title" content="{{ post.title }}">
+    <meta property="og:description" content="{{ post.excerpt|default:""|truncatewords:30 }}"> {# Use excerpt if available, fallback to empty string and truncate #}
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    {% if post.featured_image %}
+        {# CORRECT WAY: Concatenate scheme, host, and image URL for absolute path #}
+        <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ post.featured_image.url }}">
+        <meta property="og:image:width" content="1200"> {# Recommended: Set image width #}
+        <meta property="og:image:height" content="630"> {# Recommended: Set image height #}
+    {% else %}
+        <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/default_blog_image.jpg' %}"> {# Fallback default image #}
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+    {% endif %}
+    <meta property="og:type" content="article">
+    <meta property="og:locale" content="en_US"> {# Or your site's locale #}
+    <meta property="og:site_name" content="{{ site_settings.site_title }}">
+
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary_large_image"> {# Use summary_large_image for a bigger preview #}
+    <meta name="twitter:title" content="{{ post.title }}">
+    <meta name="twitter:description" content="{{ post.excerpt|default:""|truncatewords:30 }}">
+    {% if post.featured_image %}
+        <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{{ post.featured_image.url }}">
+    {% else %}
+        <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/default_blog_image.jpg' %}">
+    {% endif %}
+    <meta name="twitter:site" content="@Kvng_Hezzy"> {# Replace with your Twitter handle if you have one #}
+    <meta name="twitter:creator" content="@Kvng_Hezzy"> {# Replace with your Twitter handle #}
+{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/blog_detail.css' %}">
 <link rel="stylesheet" href="{% static 'css/comments.css' %}">
