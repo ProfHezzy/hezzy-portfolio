@@ -910,3 +910,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
     initializeBlogDetailFeatures();
 });
+
+site_settings.resume.url

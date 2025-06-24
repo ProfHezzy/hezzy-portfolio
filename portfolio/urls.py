@@ -15,7 +15,7 @@ urlpatterns = [
     path('api/projects/', views.projects_api, name='projects_api'), # New API endpoint for projects data
 
     # Blog URLs
-    path('blog/', views.blog_list, name='blog'), # List all blog posts
+    path('blog/', views.blog_list, name='blog_list'), # List all blog posts
     path('blog/<slug:slug>/', views.blog_detail, name='blog_detail'), # Individual blog post detail
     path('blog/<slug:slug>/like/', views.like_blog_post, name='like_blog_post'), # Like/Unlike blog post
     path('blog/<slug:slug>/comment/', views.post_comment, name='post_comment'), # Post a comment (handled by post_comment view)

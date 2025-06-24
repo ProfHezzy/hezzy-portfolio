@@ -321,23 +321,59 @@ class Service(models.Model):
 
 
 class Testimonial(models.Model):
-    name = models.CharField(max_length=200)
-    company = models.CharField(max_length=200, blank=True, null=True)
-    role = models.CharField(max_length=200, blank=True, null=True)
-    testimonial_text = models.TextField()
-    date_given = models.DateField(blank=True, null=True)
-    avatar = models.ImageField(upload_to='testimonials/', blank=True, null=True)
-    featured = models.BooleanField(default=False)
-    rating = models.PositiveIntegerField(
-        default=5,
-        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    """
+    Represents a client testimonial.
+    """
+    name = models.CharField(max_length=100, help_text="Name of the person giving the testimonial")
+    role = models.CharField(max_length=100, blank=True, null=True, help_text="Role or title of the person (e.g., CEO, Marketing Manager)")
+    company = models.CharField(max_length=150, blank=True, null=True, help_text="Company the person works for")
+    testimonial_text = models.TextField(help_text="The actual testimonial content")
+
+    # IMPORTANT CHANGE FOR date_given:
+    # 1. Removed 'blank=True, null=True': If you want this to be auto-added upon creation,
+    #    it should generally not be nullable, especially with auto_now_add.
+    # 2. Added 'auto_now_add=True': This automatically sets the date when the object is first created.
+    #    This is the most common and robust way to handle 'date added' fields.
+    #    It also means you DO NOT need to provide a default value during makemigrations
+    #    if the table is empty, or you will get a prompt for a one-off default for existing rows.
+    #    If you want it to be editable after creation, use auto_now=True instead of auto_now_add=True.
+    #    If you want to manually set it and make it optional, then keep blank=True, null=True and remove auto_now_add=True.
+    #    Based on our previous conversation, auto_now_add=True was the goal.
+    date_given = models.DateField(auto_now_add=True, help_text="Date the testimonial was added")
+
+    avatar = models.ImageField(
+        upload_to='testimonials/avatars/', # Suggesting 'avatars/' subfolder for organization
+        blank=True,
+        null=True,
+        help_text="Optional: Image of the person giving the testimonial"
     )
-    
+    featured = models.BooleanField(default=False, help_text="Check to display this testimonial on the homepage")
+
+    # It seems you had `is_approved` in a previous version, which is good practice.
+    # Re-adding it for moderation. If you don't need it, you can omit it.
+    is_approved = models.BooleanField(default=False, help_text="Only approved testimonials will be visible on the site")
+
+    rating = models.IntegerField( # Changed to IntegerField for consistency, although PositiveIntegerField is fine too
+        default=5,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Rating out of 5 stars (1 being lowest, 5 highest)"
+    )
+
     class Meta:
-        ordering = ['-featured', '-date_given']
-    
+        verbose_name = "Testimonial" # Added for clarity in admin
+        verbose_name_plural = "Testimonials" # Added for clarity in admin
+        ordering = ['-date_given', 'name'] # Changed from featured due to auto_now_add
+
     def __str__(self):
-        return f"Testimonial by {self.name}"
+        # Improved __str__ for better display in admin
+        return f"Testimonial by {self.name} ({self.company if self.company else 'N/A'})"
+
+    # Helper methods for displaying stars in templates
+    def get_filled_stars(self):
+        return range(self.rating)
+
+    def get_empty_stars(self):
+        return range(5 - self.rating)
 
 
 class ContactInfo(models.Model):
@@ -422,3 +458,4 @@ class Message(models.Model):
     
     def __str__(self):
         return f"Message from {self.name}"
+

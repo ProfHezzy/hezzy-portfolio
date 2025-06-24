@@ -930,6 +930,132 @@ footer {
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
+
+/* Services Section */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.service-card {
+    background-color: white;
+    padding: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    text-align: center;
+    transition: var(--transition);
+    border: 1px solid var(--light-gray); /* Add a subtle border */
+}
+
+.service-card:hover {
+    transform: translateY(-8px); /* More pronounced lift */
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color); /* Highlight on hover */
+}
+
+.service-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.service-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--dark-color);
+}
+
+.service-card p {
+    color: var(--gray-color);
+    font-size: 0.95rem;
+}
+
+/* Certifications Section */
+.certifications-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.certification-card {
+    background-color: white;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    text-align: center;
+    padding-bottom: 1.5rem; /* Space for content below image */
+    border: 1px solid var(--light-gray);
+}
+
+.certification-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow);
+}
+
+.certification-card img {
+    width: 100%;
+    height: 180px; /* Fixed height for consistent card size */
+    object-fit: cover;
+    margin-bottom: 1rem;
+    transition: var(--transition);
+}
+
+.certification-card:hover img {
+    transform: scale(1.03);
+}
+
+.certification-card h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+    color: var(--dark-color);
+    padding: 0 1rem; /* Add padding to prevent text sticking to edges */
+}
+
+.certification-card p {
+    color: var(--gray-color);
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+    padding: 0 1rem;
+}
+
+.certification-card .cert-date {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--gray-color);
+    margin-bottom: 1rem;
+}
+
+.certification-card .cert-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+    font-size: 0.9rem;
+}
+
+.certification-card .cert-link:hover {
+    color: var(--primary-dark);
+}
+
+.certification-card .cert-link i {
+    margin-left: 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* Responsive adjustments for new sections */
+@media (max-width: 768px) {
+    .services-grid,
+    .certifications-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Responsive Styles */
 @media (max-width: 992px) {
     .hero .container {
@@ -1025,5 +1151,181 @@ footer {
     
     .about-details {
         grid-template-columns: 1fr;
+    }
+}
+
+
+/* Testimonials Carousel Specific Styling */
+
+/* The main Swiper container */
+.testimonials-slider {
+    width: 100%;
+    max-width: 1200px; /* Optional: Constrain the max width of the slider */
+    margin: 0 auto; /* Center the slider */
+    padding: 0 15px; /* Add some padding on smaller screens, if your .container doesn't handle it */
+    position: relative; /* Needed for absolute positioning of nav buttons/pagination */
+    padding-bottom: 60px; /* Space for pagination dots below the slider if they are outside */
+}
+
+/* Individual Testimonial Card (now a Swiper slide) */
+.testimonial-card {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    text-align: left;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: auto; /* Allow height to adjust to content */
+    display: flex; /* Helps align content within the card */
+    flex-direction: column;
+    justify-content: space-between; /* Pushes date_given to bottom */
+}
+
+.testimonial-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.testimonial-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.testimonial-avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 15px;
+    border: 3px solid #007bff; /* Accent border */
+}
+
+.testimonial-meta {
+    flex-grow: 1; /* Allows meta to take available space */
+}
+
+.testimonial-meta h3 {
+    margin: 0;
+    font-size: 1.4em;
+    color: #333;
+}
+
+.testimonial-meta .role-company {
+    margin: 5px 0 0;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.testimonial-rating {
+    margin-bottom: 15px;
+}
+
+.testimonial-rating .fas,
+.testimonial-rating .far {
+    color: #ffc107; /* Star color (e.g., Bootstrap yellow) */
+    font-size: 1.2em;
+    margin-right: 2px;
+}
+
+.testimonial-text {
+    font-size: 1.1em;
+    line-height: 1.6;
+    color: #444;
+    margin-bottom: 20px;
+    font-style: italic; /* Common for testimonials */
+    flex-grow: 1; /* Allows text to take available space, pushing date down */
+}
+
+.testimonial-date {
+    font-size: 0.85em;
+    color: #888;
+    display: block; /* Ensures it's on its own line */
+    text-align: right;
+    margin-top: auto; /* Pushes the date to the bottom if using flex-direction: column */
+}
+
+/* Swiper Navigation Arrows */
+.swiper-button-prev,
+.swiper-button-next {
+    color: #007bff; /* Example: Match your accent color */
+    /* Position them outside the slider if desired, or within */
+    /* Adjust these values based on visual preference */
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2em; /* Make arrows larger */
+    width: 40px; /* Size of the button area */
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
+    border-radius: 50%; /* Make them round */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: background-color 0.3s ease;
+}
+
+.swiper-button-prev:hover,
+.swiper-button-next:hover {
+    background-color: rgba(255, 255, 255, 1); /* Opaque on hover */
+}
+
+/* Specific positioning for prev/next buttons (adjust as needed) */
+.swiper-button-prev {
+    left: 0px; /* Closer to the edge */
+}
+.swiper-button-next {
+    right: 0px; /* Closer to the edge */
+}
+
+/* Swiper Pagination Dots */
+.swiper-pagination {
+    position: absolute;
+    bottom: 20px; /* Position below the carousel */
+    left: 0;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.swiper-pagination-bullet {
+    background: #bbb; /* Inactive dot color */
+    opacity: 0.7;
+    width: 10px; /* Size of the dots */
+    height: 10px;
+    margin: 0 5px; /* Space between dots */
+}
+
+.swiper-pagination-bullet-active {
+    background: #007bff; /* Active dot color */
+    opacity: 1;
+    transform: scale(1.2); /* Slightly larger active dot */
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .section-title {
+        font-size: 2em;
+    }
+    .testimonials-slider {
+        padding: 0; /* Remove horizontal padding if slides fill screen */
+    }
+    .testimonial-card {
+        padding: 20px;
+    }
+    .testimonial-avatar {
+        width: 60px;
+        height: 60px;
+    }
+    .testimonial-meta h3 {
+        font-size: 1.2em;
+    }
+    /* Hide navigation arrows on very small screens if they clutter */
+    .swiper-button-prev,
+    .swiper-button-next {
+        display: none;
+    }
+    .swiper-pagination {
+        bottom: 10px; /* Adjust pagination position for smaller screens */
     }
 }

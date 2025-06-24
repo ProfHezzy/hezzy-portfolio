@@ -1,3 +1,4 @@
+// main.js
 // Ensure the DOM is fully loaded before running any JavaScript
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -29,9 +30,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (hamburger && mobileMenu) {
         // Toggle mobile menu and hamburger animation on click
         hamburger.addEventListener('click', function() {
+            const isExpanded = mobileMenu.classList.contains('active');
             mobileMenu.classList.toggle('active');
             hamburger.classList.toggle('active'); // Add active class for potential hamburger icon animation
             body.classList.toggle('overflow-hidden'); // Prevent scrolling when menu is open
+            hamburger.setAttribute('aria-expanded', !isExpanded); // Update ARIA attribute
         });
 
         // Close mobile menu when a navigation link is clicked
@@ -40,7 +43,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 mobileMenu.classList.remove('active');
                 hamburger.classList.remove('active');
                 body.classList.remove('overflow-hidden');
+                hamburger.setAttribute('aria-expanded', 'false');
             });
+        });
+
+        // Close mobile menu on window resize if it transitions to desktop view
+        window.addEventListener('resize', function() {
+            // Assuming your CSS breakpoint for mobile menu is 768px
+            if (window.innerWidth > 768 && mobileMenu.classList.contains('active')) {
+                mobileMenu.classList.remove('active');
+                hamburger.classList.remove('active');
+                body.classList.remove('overflow-hidden');
+                hamburger.setAttribute('aria-expanded', 'false');
+            }
         });
     }
 
@@ -77,6 +92,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- 4. Contact Form Submission with AJAX ---
     const contactForm = document.querySelector('.contact-form');
+    // Assume you have a message box in your HTML for feedback, e.g.:
+    // <div id="contact-form-message" class="message-box" style="display: none;"></div>
+    const messageBox = document.getElementById('contact-form-message');
+
+    function showFormMessage(message, type) {
+        if (messageBox) {
+            messageBox.textContent = message;
+            messageBox.className = 'message-box ' + type; // Adds 'success' or 'error' class
+            messageBox.style.display = 'block';
+            messageBox.style.opacity = '1'; // Ensure it fades in if CSS transition is applied
+            setTimeout(() => {
+                messageBox.style.opacity = '0'; // Start fade out
+                // Wait for transition to complete before hiding display
+                setTimeout(() => {
+                    messageBox.style.display = 'none';
+                }, 500); // Assumes a 0.5s CSS transition for opacity
+            }, 5000); // Hide after 5 seconds
+        } else {
+            console.warn('Message box element not found. Please add <div id="contact-form-message"> to your HTML.');
+            alert(message); // Fallback to alert if message box doesn't exist
+        }
+    }
+
+
     if (contactForm) {
         contactForm.addEventListener('submit', async function(e) {
             e.preventDefault(); // Prevent default form submission
@@ -93,27 +132,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 const response = await fetch(formUrl, {
                     method: 'POST',
                     body: formData,
-                    // Django's CSRF token is handled by FormData automatically for forms with method POST.
-                    // If you were sending JSON, you'd need to manually add the X-CSRFToken header.
-                    // For now, it's fine as Django forms expect x-www-form-urlencoded or multipart/form-data.
                 });
 
                 if (response.ok) {
                     const result = await response.json(); // Assuming Django sends back JSON response
                     if (result.success) {
-                        alert('Message sent successfully! Thank you.'); // Use a custom modal for production
+                        showFormMessage('Message sent successfully! Thank you.', 'success');
                         this.reset(); // Clear the form
                     } else {
                         // Handle validation errors or other server-side issues
-                        alert('Error: ' + (result.message || 'Something went wrong. Please try again.')); // Use a custom modal
+                        // result.message might contain a general error, or result.errors for specific field errors
+                        let errorMessage = 'Something went wrong. Please try again.';
+                        if (result.message) {
+                            errorMessage = result.message;
+                        } else if (result.errors) {
+                            // If Django sends specific field errors, display them
+                            errorMessage = Object.values(result.errors).map(err => err.join(' ')).join('\n');
+                        }
+                        showFormMessage('Error: ' + errorMessage, 'error');
                     }
                 } else {
                     // Handle HTTP errors (e.g., 404, 500)
-                    alert('Server error: ' + response.statusText + '. Please try again later.'); // Use a custom modal
+                    showFormMessage('Server error: ' + response.statusText + '. Please try again later.', 'error');
                 }
             } catch (error) {
                 console.error('Network or submission error:', error);
-                alert('Could not send message. Please check your internet connection.'); // Use a custom modal
+                showFormMessage('Could not send message. Please check your internet connection.', 'error');
             } finally {
                 submitButton.textContent = originalButtonText;
                 submitButton.disabled = false; // Re-enable button
@@ -140,12 +184,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }, observerOptions);
 
     sections.forEach(section => {
-        section.classList.add('hidden-for-animation'); // Add initial hidden state
+        // Exclude the hero section from the default hidden-for-animation class
+        // as it might have its own initial animation or should be visible immediately
+        if (!section.classList.contains('hero')) {
+            section.classList.add('hidden-for-animation'); // Add initial hidden state for other sections
+        }
         sectionObserver.observe(section);
     });
 
-    // Add a small delay for the hero section animation if needed
+    // Add a specific class for initial hero section animation if desired,
+    // or ensure it's visible by default without the 'hidden-for-animation' class.
+    // Your current setup with 'fade-in-hero' is good for this.
     if (heroSection) {
+        // This makes the hero section visible immediately or with a unique animation
         heroSection.classList.add('fade-in-hero');
     }
 });
