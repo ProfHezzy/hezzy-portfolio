@@ -1,0 +1,37 @@
+{% extends "portfolio/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/contact_success.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="success-container">
+    <div class="success-card">
+        <!-- Email-compatible content (no external dependencies) -->
+        <div style="text-align: center; margin-bottom: 30px;">
+            <svg width="100" height="100" viewBox="0 0 52 52" style="margin: 0 auto;">
+                <circle cx="26" cy="26" r="25" fill="none" stroke="#4BB543" stroke-width="2"/>
+                <path fill="none" stroke="#4BB543" stroke-width="3" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+            </svg>
+        </div>
+        
+        <h1 style="font-size: 2.2rem; color: #14213d; margin-bottom: 1rem; text-align: center;">Message Sent Successfully!</h1>
+        <p style="font-size: 1.1rem; color: #6c757d; margin-bottom: 2.5rem; text-align: center; max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+            Thank you for reaching out. I've received your message and will get back to you within 24-48 hours.
+        </p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+            <div style="background-color: #f8f9fa; border-radius: 8px; padding: 1.5rem; transition: all 0.3s ease;">
+                <div style="font-size: 2rem; color: #4361ee; margin-bottom: 1rem; text-align: center;">📨</div>
+                <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem; color: #14213d; text-align: center;">Email Confirmation</h3>
+                <p style="font-size: 0.9rem; color: #6c757d; line-height: 1.5; text-align: center;">A copy of this message has been sent to your email address.</p>
+            </div>
+            
+            <!-- Other cards similarly styled -->
+        </div>
+        
+        <!-- Rest of your content with inline styles -->
+    </div>
+</div>
+{% endblock %}

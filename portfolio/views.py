@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q # For complex queries
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_GET
-from django.core.mail import send_mail # For contact form email sending
+from django.core.mail import send_mail, EmailMultiAlternatives # For contact form email sending
 from django.conf import settings # To access EMAIL_HOST_USER, etc.
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.decorators import login_required # For like functionality
@@ -12,6 +12,8 @@ from django.utils import timezone # For date handling
 from taggit.models import Tag # Import Tag model for blog post tagging
 from django.db.models import Q # For complex queries in blog filtering
 from django.db import models # Import models for type hinting and validation
+from django.template.loader import render_to_string
+from django.urls import reverse
 
 # Import all models from your portfolio app
 from .models import (
@@ -85,33 +87,16 @@ def about(request):
     return render(request, 'portfolio/about.html', context)
 
 
-@require_GET # This is for displaying the contact form for GET requests
-def contact_page(request): # Renamed to contact_page to avoid conflict with @require_POST contact view
-    """View to display the contact form and info."""
-    context = get_global_context()
-    contact_info = ContactInfo.objects.first()
-    form = ContactForm() # Always provide an empty form for GET requests
-    
-    context.update({
-        'contact_info': contact_info,
-        'form': form,
-    })
-    return render(request, 'portfolio/contact.html', context)
-
-
-@require_POST # This is for handling AJAX POST submissions to contact form
-def submit_contact_form(request): # Renamed to submit_contact_form
-    """
-    AJAX endpoint for handling contact form submissions.
-    Returns JSON response.
-    """
+@require_POST
+def submit_contact_form(request):
     form = ContactForm(request.POST)
     if form.is_valid():
         name = form.cleaned_data['name']
         email = form.cleaned_data['email']
         subject = form.cleaned_data['subject'] or 'Portfolio Contact Form Submission'
         message_content = form.cleaned_data['message']
-        
+
+        # Save the message to the database
         Message.objects.create(
             name=name,
             email=email,
@@ -119,23 +104,54 @@ def submit_contact_form(request): # Renamed to submit_contact_form
             message=message_content
         )
 
+        # Prepare context for the email
+        form_data = {
+            'name': name,
+            'email': email,
+            'subject': subject,
+            'message': message_content,
+        }
+
+        # Render HTML email content for the user
+        email_html_content = render_to_string(
+            'portfolio/contact_success_email.html',
+            {'form_data': form_data}
+        )
+
         try:
-            # Ensure settings.DEFAULT_FROM_EMAIL and settings.CONTACT_EMAIL are configured
+            # Send email to site owner (plain text)
             send_mail(
                 subject,
                 f"Name: {name}\nEmail: {email}\n\nMessage:\n{message_content}",
                 settings.DEFAULT_FROM_EMAIL,
-                [settings.CONTACT_EMAIL], # Replace with your actual recipient email
+                [settings.CONTACT_EMAIL],
                 fail_silently=False,
             )
-            return JsonResponse({'success': True, 'message': 'Message sent successfully!'}, status=200)
+            # Send confirmation email to user (HTML)
+            email_message = EmailMultiAlternatives(
+                "Thank you for contacting Hezekiah",
+                "Thank you for contacting me! Here is a copy of your message.",  # fallback plain text
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+            )
+            email_message.attach_alternative(email_html_content, "text/html")
+            email_message.send()
+
+            # Return JSON success (no redirect)
+            return JsonResponse({'success': True, 'message': 'Your message was sent successfully!'})
         except Exception as e:
-            print(f"Error sending email: {e}") # Log the error
+            print(f"Error sending email: {e}")
             return JsonResponse({'success': False, 'message': 'Failed to send message. Please try again later.'}, status=500)
     else:
-        # Return form errors in a structured JSON response
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
+
+@require_GET
+def email_success(request):
+    form_data = request.session.get('contact_success_form_data', None)
+    if form_data:
+        del request.session['contact_success_form_data']
+    return render(request, 'portfolio/contact_success_email.html', {'form_data': form_data})
 
 # --- Projects Views ---
 

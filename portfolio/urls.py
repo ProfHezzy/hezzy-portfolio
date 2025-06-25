@@ -5,9 +5,8 @@ from . import views # Import all views from portfolio/views.py
 urlpatterns = [
     # Core Portfolio URLs
     path('', views.home, name='home'), # Renamed from index to home for clarity
-    path('about/', views.about, name='about'),
-    path('contact/', views.contact_page, name='contact'), # Renamed for GET request (displaying form)
     path('contact/submit/', views.submit_contact_form, name='submit_contact_form'), # For AJAX POST submission
+    path('contact/email-success/', views.email_success, name='email_success'), # New URL for email success page
 
     # Projects URLs
     path('projects/', views.projects_list, name='projects'), # List all projects

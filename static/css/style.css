@@ -649,6 +649,56 @@ section {
     resize: vertical;
 }
 
+/* Beautiful success alert styling */
+#contact-form-message {
+    display: none;
+    margin: 1.5rem 0 1rem 0;
+    padding: 1.2rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1.08rem;
+    font-weight: 500;
+    box-shadow: 0 2px 12px rgba(76, 175, 80, 0.08);
+    transition: all 0.3s;
+    position: relative;
+    z-index: 2;
+    min-height: 48px;
+}
+
+#contact-form-message.success {
+    display: block;
+    background: linear-gradient(90deg, #d4fc79 0%, #96e6a1 100%);
+    color: #155724;
+    border: 1.5px solid #b6e6c9;
+    position: relative;
+    padding-left: 3.2rem;
+}
+
+#contact-form-message.success::before {
+    content: "✔";
+    position: absolute;
+    left: 1.1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    color: #34a853;
+    font-weight: bold;
+    background: #eaffea;
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#contact-form-message.error {
+    display: block;
+    background: #ffeaea;
+    color: #a94442;
+    border: 1.5px solid #f5c6cb;
+    padding-left: 1.5rem;
+}
+
 /* Footer */
 footer {
     background-color: var(--dark-color);

@@ -14,8 +14,8 @@ SECRET_KEY = 'django-insecure-$=hym+7$inm*p0gj8((6yys$w$hd+(&$i!3w2^v)7b4#w58((%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-#ALLOWED_HOSTS = []
-ALLOWED_HOSTS = ['hezzy-portfolio.onrender.com', 'localhost']
+ALLOWED_HOSTS = []
+#ALLOWED_HOSTS = ['hezzy-portfolio.onrender.com', 'localhost']
 
 # Application definition
 
@@ -133,11 +133,11 @@ EMAIL_HOST = 'smtp.gmail.com' # or your SMTP server
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'hezekiahonline94@gmail.com' # Your actual email address
-EMAIL_HOST_PASSWORD = 'your_email_password' # Your actual email password/app password
+EMAIL_HOST_PASSWORD = 'kryx giqd kupx qnig' # Your actual email password/app password
 
 # The email address from which the contact form emails will be sent
 DEFAULT_FROM_EMAIL = 'your_email@example.com'
 # The email address where you want to receive contact form submissions
-CONTACT_EMAIL = 'your_portfolio_contact_email@example.com'
+CONTACT_EMAIL = 'hezekiahonline94@gmail.com'
 
 CSRF_TRUSTED_ORIGINS = ['http://localhost:8000']

@@ -463,4 +463,48 @@
         });
     });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.contact-form');
+    const messageBox = document.getElementById('contact-form-message');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            messageBox.style.display = 'none';
+            messageBox.classList.remove('success', 'error');
+            const formData = new FormData(form);
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                messageBox.style.display = 'block';
+                if (data.success) {
+                    messageBox.textContent = data.message || "Message sent successfully!";
+                    messageBox.classList.add('success');
+                    form.reset();
+                } else {
+                    if (data.errors) {
+                        messageBox.textContent = Object.values(data.errors).join(' ');
+                    } else {
+                        messageBox.textContent = data.message || "Failed to send message.";
+                    }
+                    messageBox.classList.add('error');
+                }
+            })
+            .catch(() => {
+                messageBox.style.display = 'block';
+                messageBox.textContent = "An error occurred. Please try again.";
+                messageBox.classList.add('error');
+            });
+        });
+    }
+});
+</script>
 {% endblock extra_js %}
