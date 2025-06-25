@@ -48,7 +48,7 @@
         <div class="hero-overlay"></div>
         <div class="container">
             <div class="breadcrumb animate__animated animate__fadeIn">
-                <a href="{% url 'blog' %}">Blog</a>
+                <a href="{% url 'blog_list' %}">Blog</a>
                 <span>/</span>
                 <span>{{ post.title|truncatechars:30 }}</span>
             </div>
@@ -257,7 +257,7 @@
         <div class="container">
             <div class="section-header">
                 <h2 class="section-title">More to Read</h2>
-                <a href="{% url 'blog' %}" class="view-all">View All Articles <i class="fas fa-arrow-right"></i></a>
+                <a href="{% url 'blog_list' %}" class="view-all">View All Articles <i class="fas fa-arrow-right"></i></a>
             </div>
             
             <div class="related-grid">
