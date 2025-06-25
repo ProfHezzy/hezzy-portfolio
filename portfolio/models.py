@@ -205,7 +205,7 @@ class Comment(models.Model):
     @property
     def get_avatar_url(self):
         if self.author:
-            return static('images/default_user_avatar.jpg') 
+            return static('images/default_comment_avatar.jpg') 
         else:
             return static('images/default_comment_avatar.jpg')
 

@@ -259,7 +259,7 @@
             </div>
             
             <div class="related-grid">
-                {% for related_blog_post in related_blog_post %}
+                {% for related_blog_post in related_blogs %}
                 <article class="related-card animate__animated animate__fadeInUp">
                     <a href="{% url 'blog_detail' related_blog_post.slug %}" class="related-link">
                         <div class="related-image">

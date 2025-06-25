@@ -1,6 +1,6 @@
 # portfolio/views.py
 from django.shortcuts import render, get_object_or_404, redirect
-from django.db.models import Q # For complex queries
+from django.db.models import Q, Sum # For complex queries
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_GET
 from django.core.mail import send_mail, EmailMultiAlternatives # For contact form email sending
@@ -344,36 +344,61 @@ def blog_detail(request, slug):
     # Using 'replies' as related_name in Comment model, so prefetch that.
     comments = Comment.objects.filter(
         blog_post=blog_post, active=True, parent__isnull=True
-    ).prefetch_related('replies').order_by('created_at') 
+    ).prefetch_related('replies').order_by('created_at')
 
     # Pass request.user to the CommentForm instance for initial data and readonly fields
-    comment_form = CommentForm(initial={'blog_post': blog_post.id}, user=request.user) 
-    
-    # Fetch related blog posts (e.g., by common tags)
+    comment_form = CommentForm(initial={'blog_post': blog_post.id}, user=request.user)
+
+    # --- DEBUGGING RELATED BLOGS ---
+    print(f"\n--- Debugging related_blogs for post: '{blog_post.title}' (ID: {blog_post.pk}) ---")
+    print(f"Current post's status: '{blog_post.status}'")
+
+    # Get tags for the current blog post
     blog_tags_ids = blog_post.tags.values_list('id', flat=True)
-    related_blogs = Blog.objects.filter(
+    print(f"Current blog post tags IDs: {list(blog_tags_ids)}") # Convert to list for printing
+
+    # First attempt: Related by tags
+    related_blogs_by_tags = Blog.objects.filter(
         status='published'
     ).filter(
-        tags__id__in=blog_tags_ids
+        tags__id__in=blog_tags_ids # This needs tags_ids to have values
     ).exclude(
-        pk=blog_post.pk 
+        pk=blog_post.pk
     ).distinct().order_by('-published_at')[:3]
 
+    print(f"Related blogs by tags count (initial query): {related_blogs_by_tags.count()}")
+    for b in related_blogs_by_tags:
+        print(f"  - Found by Tag: '{b.title}' (ID: {b.pk})")
+
+    related_blogs = list(related_blogs_by_tags) # Start with posts found by tags
+
     # If not enough related blogs, fill with other recent published blogs
-    if related_blogs.count() < 3:
-        remaining_count = 3 - related_blogs.count()
+    if len(related_blogs) < 3: # Use len() here as related_blogs is now a list
+        remaining_count = 3 - len(related_blogs)
         if remaining_count > 0:
+            existing_ids = [b.id for b in related_blogs] + [blog_post.id] # IDs already found + current post ID
+            print(f"Need {remaining_count} more posts. Existing IDs to exclude from 'other_recent_blogs': {existing_ids}")
+
             other_recent_blogs = Blog.objects.filter(
                 status='published'
             ).exclude(
-                Q(pk=blog_post.pk) | Q(id__in=[b.id for b in related_blogs])
+                id__in=existing_ids # Exclude current post and already found related posts
             ).order_by('-published_at')[:remaining_count]
-            related_blogs = list(related_blogs) + list(other_recent_blogs)
+
+            print(f"Other recent blogs count (fallback query): {other_recent_blogs.count()}")
+            for b in other_recent_blogs:
+                print(f"  - Found as Other Recent: '{b.title}' (ID: {b.pk})")
+
+            related_blogs.extend(list(other_recent_blogs)) # Use extend to add to the list
+
+    print(f"Final related_blogs count passed to template: {len(related_blogs)}")
+    print(f"--- End debugging ---\n")
+    # --- END DEBUGGING RELATED BLOGS ---
 
     # Calculate total articles and total views for author bio (can be optimized with aggregation)
     total_articles = Blog.objects.filter(status='published').count()
-    total_blog_views = Blog.objects.filter(status='published').aggregate(total_views=models.Sum('views'))['total_views'] or 0
-    
+    total_blog_views = Blog.objects.filter(status='published').aggregate(total_views=Sum('views'))['total_views'] or 0
+
     # Calculate years of experience (example - adjust logic based on your needs)
     # Assuming start_year in SiteSetting or calculated from first Experience
     years_experience = 0
@@ -385,7 +410,7 @@ def blog_detail(request, slug):
     context.update({
         'blog_post': blog_post, # Use 'blog_post' variable name consistently
         'comments': comments,
-        'comment_form': comment_form, 
+        'comment_form': comment_form,
         'related_blogs': related_blogs,
         'has_user_liked': blog_post.liked_by.filter(id=request.user.id).exists() if request.user.is_authenticated else False, # Re-check like status
         'blog_post_count': total_articles, # For author bio
