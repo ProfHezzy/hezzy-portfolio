@@ -16,6 +16,8 @@
 
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
 
+    <link rel="icon" type="image/jpg" href="{% static 'images/profile.jpg' %}">
+
     {# A block for page-specific CSS if needed #}
     {% block extra_css %}{% endblock extra_css %}
 </head>
@@ -70,10 +72,11 @@
                 <div class="footer-social">
                     <h3>Connect</h3>
                     <div class="social-icons">
-                        <a href="#"><i class="fab fa-github"></i></a>
-                        <a href="#"><i class="fab fa-linkedin"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-dev"></i></a>
+                        {% for link in social_links %}
+                            <a href="{{ link.url }}" target="_blank" rel="noopener" title="{{ link.name }}">
+                                <i class="{{ link.icon }}"></i>
+                            </a>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
