@@ -742,18 +742,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /* like functionality */
     // --- Like Button Logic ---
+    
+
     if (likeButton) {
         console.log('Like button element found (.like-btn). Attaching event listener.');
         likeButton.addEventListener('click', async function() {
             console.log('Like button clicked.');
 
-            // if (!USER_IS_AUTHENTICATED) {
-            //     showToast('Please log in to like this post.', 'info');
-            //     console.warn('Like failed: User not authenticated.');
-            //     return;
-            // }
-            
-            // Use the postSlug from the global window object
+            // Retrieve postSlug from the global window object
+            const postSlug = window.blog_post_SLUG; // <-- Corrected variable name // <-- THIS IS THE KEY CHANGE
+            if (!postSlug) {
+                console.error('Error: POST_SLUG is not defined in window. Cannot construct like URL.');
+                showToast('Could not like post. Missing post information.', 'error');
+                this.disabled = false;
+                return;
+            }
+
             const likeUrl = `/blog/${postSlug}/like/`;
             console.log('Like API URL:', likeUrl);
 
@@ -768,28 +772,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 const response = await fetch(likeUrl, {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
-                        'X-Requested-With': 'XMLHttpRequest' // Helps Django identify AJAX requests
+                        'X-CSRFToken': window.CSRF_TOKEN, // Use window.CSRF_TOKEN
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
                 });
 
-                if (!response.ok) { // Check for HTTP errors (4xx, 5xx)
+                if (!response.ok) {
                     const errorText = await response.text();
                     console.error('HTTP Error during like API call:', response.status, response.statusText, errorText);
                     showToast(`Error: ${response.status} ${response.statusText}`, 'error');
-                    return; // Stop execution on HTTP error
+                    return;
                 }
 
                 const data = await response.json();
                 console.log('Like API response data:', data);
 
-                if (data.success) {
+                // IMPORTANT: Your Python view now returns 'likes_count' and 'liked' (boolean)
+                // Adjust frontend based on that.
+                if (data.likes_count !== undefined) { // Check for expected data
                     if (likeCountSpan) {
                         likeCountSpan.textContent = data.likes_count;
                         console.log('Like count updated to:', data.likes_count);
                     }
 
-                    if (data.has_liked) {
+                    if (data.liked) { // Use the 'liked' boolean from backend
                         this.classList.add('liked');
                         showToast(data.message || 'Post liked!', 'success');
                     } else {
@@ -797,15 +803,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         showToast(data.message || 'Post unliked!', 'info');
                     }
                 } else {
-                    showToast(data.message || 'Failed to process like. Please try again.', 'error');
-                    console.error('Like API returned success: false. Message:', data.message);
+                    showToast(data.message || 'Failed to process like. Unexpected response.', 'error');
+                    console.error('Like API returned unexpected data. Message:', data.message);
                 }
+
             } catch (error) {
                 console.error('Error liking post (network/parsing error):', error);
                 showToast('A network error occurred while processing your like.', 'error');
             } finally {
                 this.disabled = false; // Always re-enable button
-                // Revert spinner to original heart icon
                 if (heartIcon) {
                     heartIcon.innerHTML = originalHeartHTML;
                 }

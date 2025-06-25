@@ -447,29 +447,23 @@ def post_comment(request, slug): # This view processes the comment form submissi
 
 
 from django.db import transaction # Import transaction for atomicity
+from django.views.decorators.csrf import csrf_protect # Import CSRF protection decorator
 # --- Blog Post Liking ---
 @require_POST
+@csrf_protect # <--- ADD THIS DECORATOR!
 def like_blog_post(request, slug):
     """
     Handles liking/unliking a blog post.
     Allows anonymous users to like.
     """
-    blog_post = get_object_or_404(Blog, slug=slug)
-
-    # For anonymous users, we can't use blog_post.liked_by.add(request.user)
-    # as request.user will be an AnonymousUser.
-    # Instead, we'll increment/decrement a simple counter.
-
-    # To prevent easy spamming by just refreshing,
-    # you might want to use sessions or client-side fingerprinting
-    # to track anonymous likes, but for pure counter, this is fine.
-    # For now, let's just increment/decrement.
+    blog_post = get_object_or_404(Blog, slug=slug) # Ensure 'Blog' is your actual model name
 
     # Check if the user (even anonymous) has 'liked' in their session
-    # This is a simple way to prevent easy double-liking from the same browser session.
+    # We'll store blog_post.id in the session list
     liked_posts_in_session = request.session.get('liked_posts', [])
+    
     message = ''
-    has_liked = False # Will indicate if the post is currently liked by this session
+    liked = False # Renamed from has_liked for consistency with JS expectation
 
     with transaction.atomic(): # Ensure likes_count is updated safely
         if blog_post.id in liked_posts_in_session:
@@ -477,21 +471,23 @@ def like_blog_post(request, slug):
             blog_post.likes_count = max(0, blog_post.likes_count - 1) # Ensure not negative
             liked_posts_in_session.remove(blog_post.id)
             message = 'Post unliked.'
-            has_liked = False
+            liked = False # Set to false as it's now unliked
         else:
             # User (session) has not liked, so like
             blog_post.likes_count += 1
             liked_posts_in_session.append(blog_post.id)
             message = 'Post liked successfully!'
-            has_liked = True
+            liked = True # Set to true as it's now liked
 
         blog_post.save()
+        
+        # Update the session with the modified list
         request.session['liked_posts'] = liked_posts_in_session
+        request.session.modified = True # <--- ADD THIS LINE! Ensures session is saved.
 
     return JsonResponse({
         'success': True,
         'likes_count': blog_post.likes_count,
-        'has_liked': has_liked,
+        'liked': liked, # <--- Renamed key to 'liked' to match frontend expectation
         'message': message
     })
-

@@ -2,15 +2,14 @@
 {% load static custom_filters %}
 
 {% block head %}
-    <title>{{ blog_post.title }} - Your Blog Name</title>
+    <title>{% if blog_post %}{{ blog_post.title }} - Your Blog Name{% else %}Blog Post Not Found{% endif %}</title>
 
-    <!-- Open Graph / Facebook / LinkedIn / General Social Media Tags -->
-    <meta property="og:title" content="{{ post.title }}">
-    <meta property="og:description" content="{{ post.excerpt|default:""|truncatewords:30 }}"> {# Use excerpt if available, fallback to empty string and truncate #}
+    <meta property="og:title" content="{% if blog_post %}{{ blog_post.title }}{% endif %}">
+    <meta property="og:description" content="{% if blog_post %}{{ blog_post.excerpt|default:""|truncatewords:30 }}{% endif %}"> {# Use excerpt if available, fallback to empty string and truncate #}
     <meta property="og:url" content="{{ request.build_absolute_uri }}">
-    {% if post.featured_image %}
+    {% if blog_post and blog_post.featured_image %}
         {# CORRECT WAY: Concatenate scheme, host, and image URL for absolute path #}
-        <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ post.featured_image.url }}">
+        <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ blog_post.featured_image.url }}">
         <meta property="og:image:width" content="1200"> {# Recommended: Set image width #}
         <meta property="og:image:height" content="630"> {# Recommended: Set image height #}
     {% else %}
@@ -20,14 +19,13 @@
     {% endif %}
     <meta property="og:type" content="article">
     <meta property="og:locale" content="en_US"> {# Or your site's locale #}
-    <meta property="og:site_name" content="{{ site_settings.site_title }}">
+    <meta property="og:site_name" content="{{ site_settings.site_title|default:'Your Site Name' }}">
 
-    <!-- Twitter Card Tags -->
     <meta name="twitter:card" content="summary_large_image"> {# Use summary_large_image for a bigger preview #}
-    <meta name="twitter:title" content="{{ post.title }}">
-    <meta name="twitter:description" content="{{ post.excerpt|default:""|truncatewords:30 }}">
-    {% if post.featured_image %}
-        <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{{ post.featured_image.url }}">
+    <meta name="twitter:title" content="{% if blog_post %}{{ blog_post.title }}{% endif %}">
+    <meta name="twitter:description" content="{% if blog_post %}{{ blog_post.excerpt|default:""|truncatewords:30 }}{% endif %}">
+    {% if blog_post and blog_post.featured_image %}
+        <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{{ blog_post.featured_image.url }}">
     {% else %}
         <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/default_blog_image.jpg' %}">
     {% endif %}
@@ -44,26 +42,26 @@
 {% block content %}
 <article class="blog-detail">
     <!-- Hero Section with Parallax Effect -->
-    <section class="blog-hero" {% if post.featured_image %}style="background-image: url('{{ post.featured_image.url }}')"{% endif %}>
+    <section class="blog-hero" {% if blog_post.featured_image %}style="background-image: url('{{ blog_post.featured_image.url }}')"{% endif %}>
         <div class="hero-overlay"></div>
         <div class="container">
             <div class="breadcrumb animate__animated animate__fadeIn">
                 <a href="{% url 'blog_list' %}">Blog</a>
                 <span>/</span>
-                <span>{{ post.title|truncatechars:30 }}</span>
+                <span>{{ blog_post.title|truncatechars:30 }}</span>
             </div>
-            <h1 class="hero-title animate__animated animate__fadeInUp">{{ post.title }}</h1>
+            <h1 class="hero-title animate__animated animate__fadeInUp">{{ blog_post.title }}</h1>
             <div class="hero-meta animate__animated animate__fadeInUp animate__delay-1s">
                 <div class="meta-item">
                     <i class="far fa-calendar-alt"></i>
-                    <span>{{ post.published_at|date:"F j, Y" }}</span>
+                    <span>{{ blog_post.published_at|date:"F j, Y" }}</span>
                 </div>
                 <div class="meta-item">
                     <i class="far fa-clock"></i>
-                    <span>{{ post.content|wordcount|divide:200|floor }} min read</span>
+                    <span>{{ blog_post.content|wordcount|divide:200|floor }} min read</span>
                 </div>
                 <div class="meta-item tags">
-                    {% for tag in post.tags.all %}
+                    {% for tag in blog_post.tags.all %}
                     <span class="tag-bubble">{{ tag.name }}</span>
                     {% endfor %}
                 </div>
@@ -85,7 +83,7 @@
                 <i class="fab fa-twitter"></i>
                 <span class="tooltip">Twitter</span>
             </a>
-            <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title={{ post.title }}" target="_blank" class="social-btn linkedin" title="Share on LinkedIn">
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title={{ blog_post.title }}" target="_blank" class="social-btn linkedin" title="Share on LinkedIn">
                 <i class="fab fa-linkedin-in"></i>
                 <span class="tooltip">LinkedIn</span>
             </a>
@@ -129,12 +127,12 @@
                     <!-- Article Body with Floating TOC -->
                     <div class="article-body">
                         <div class="content-actions">
-                            <button class="action-btn like-btn {% if has_session_liked %}liked{% endif %}" data-post-slug="{{ post.slug }}" data-post-id="{{ post.id }}">
+                            <button class="action-btn like-btn {% if has_session_liked %}liked{% endif %}" data-blog_post-slug="{{ blog_post.slug }}" data-blog_post-id="{{ blog_post.id }}">
                                 <span class="heart-icon">
                                     <i class="far fa-heart"></i>
                                     <i class="fas fa-heart"></i>
                                 </span>
-                                <span class="like-count">{{ post.likes_count }}</span>
+                                <span class="like-count">{{ blog_post.likes_count }}</span>
                             </button>
                             <button class="action-btn comment-btn scroll-to-comments">
                                 <i class="far fa-comment"></i>
@@ -145,8 +143,8 @@
                             </button>
                         </div>
 
-                        <div class="post-content">
-                            {{ post.content|safe }}
+                        <div class="blog_post-content">
+                            {{ blog_post.content|safe }}
                         </div>
 
                         <!-- Article Footer -->
@@ -154,7 +152,7 @@
                             <div class="tags-container">
                                 <h5>Tags:</h5>
                                 <div class="tags-list">
-                                    {% for tag in post.tags.all %}
+                                    {% for tag in blog_post.tags.all %}
                                     <a href="#" class="tag-pill">{{ tag.name }}</a>
                                     {% endfor %}
                                 </div>
@@ -165,7 +163,7 @@
                                     <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}" target="_blank" class="share-btn twitter">
                                         <i class="fab fa-twitter"></i> Twitter
                                     </a>
-                                    <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title={{ post.title }}" target="_blank" class="share-btn linkedin">
+                                    <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title={{ blog_post.title }}" target="_blank" class="share-btn linkedin">
                                         <i class="fab fa-linkedin-in"></i> LinkedIn
                                     </a>
                                     <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank" class="share-btn facebook">
@@ -224,7 +222,7 @@
                     <p>{{ site_settings.about_me|default:"Full-Stack Developer passionate about building exceptional digital experiences with modern web technologies. I enjoy sharing insights and tutorials about web development, programming, and technology trends." }}</p>
                     <div class="bio-stats">
                         <div class="stat-item">
-                            <span class="stat-number">{{ post_count|default:"50+" }}</span>
+                            <span class="stat-number">{{ blog_post_count|default:"50+" }}</span>
                             <span class="stat-label">Articles</span>
                         </div>
                         <div class="stat-item">
@@ -261,25 +259,25 @@
             </div>
             
             <div class="related-grid">
-                {% for related_post in related_posts %}
+                {% for related_blog_post in related_blog_post %}
                 <article class="related-card animate__animated animate__fadeInUp">
-                    <a href="{% url 'blog_detail' related_post.slug %}" class="related-link">
+                    <a href="{% url 'blog_detail' related_blog_post.slug %}" class="related-link">
                         <div class="related-image">
-                            {% if related_post.featured_image %}
-                                <img src="{{ related_post.featured_image.url }}" alt="{{ related_post.title }}" loading="lazy">
+                            {% if related_blog_post.featured_image %}
+                                <img src="{{ related_blog_post.featured_image.url }}" alt="{{ related_blog_post.title }}" loading="lazy">
                             {% else %}
                                 <img src="{% static 'images/default_blog_image.jpg' %}" alt="Default Image" loading="lazy">
                             {% endif %}
                             <div class="image-overlay"></div>
-                            <div class="read-time">{{ related_post.content|wordcount|divide:200|floor }} min read</div>
+                            <div class="read-time">{{ related_blog_post.content|wordcount|divide:200|floor }} min read</div>
                         </div>
                         <div class="related-content">
                             <div class="related-meta">
                                 <span class="category">Development</span>
-                                <span class="date">{{ related_post.published_at|date:"M j, Y" }}</span>
+                                <span class="date">{{ related_blog_post.published_at|date:"M j, Y" }}</span>
                             </div>
-                            <h3 class="related-title">{{ related_post.title }}</h3>
-                            <p class="related-excerpt">{{ related_post.excerpt|default:""|truncatewords:20 }}</p>
+                            <h3 class="related-title">{{ related_blog_post.title }}</h3>
+                            <p class="related-excerpt">{{ related_blog_post.excerpt|default:""|truncatewords:20 }}</p>
                             <div class="related-footer">
                                 <span class="read-more">Read Article <i class="fas fa-arrow-right"></i></span>
                             </div>
@@ -352,7 +350,7 @@
                     
                     <div class="form-footer">
                         <button type="submit" class="btn-submit-comment">
-                            <span>Post Comment</span>
+                            <span>Comment</span>
                             <i class="fas fa-paper-plane"></i>
                         </button>
                     </div>
@@ -368,7 +366,7 @@
                     {% endif %}
                     
                     {% for comment in comments %}
-                        {% include 'portfolio/comments.html' with comment=comment post=post %}
+                        {% include 'portfolio/comments.html' with comment=comment blog_post=blog_post %}
                     {% empty %}
                         <div class="no-comments">
                             <i class="far fa-comment-dots"></i>
@@ -417,8 +415,8 @@
 
 <!-- Place this in your blog_detail.html, before your blog_detail.js script tag -->
 <script>
-    window.POST_SLUG = "{{ blog_post.slug|escapejs }}";
-    window.POST_ID = "{{ blog_post.id }}";
+    window.blog_post_SLUG = "{{ blog_post.slug|escapejs }}";
+    window.blog_post_ID = "{{ blog_post.id }}";
     window.CSRF_TOKEN = "{{ csrf_token }}";
 </script>
 {% endblock %}
